@@ -43,3 +43,5 @@ Thumbs.db
 # Package specific
 *.unitypackage
 *.zip 
+
+LICENSE.meta
