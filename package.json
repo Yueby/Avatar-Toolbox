@@ -1,19 +1,22 @@
 {
-  "name": "com.template.package",
-  "displayName": "Template Package",
-  "version": "0.0.1",
+  "name": "yueby.tools.avatar-toolbox",
+  "displayName": "◆ Avatar Toolbox",
+  "version": "2.0.0",
   "unity": "2022.3",
-  "description": "A template package for Unity",
+  "description": "An avatar toolbox for VRChat",
   "author": {
-    "name": "Your Name",
-    "email": "your.email@example.com"
+    "name": "Yueby",
+    "email": "yueby_sp@qq.com"
   },
   "keywords": [
-    "unity",
-    "package",
-    "template"
+    "yueby",
+    "avatar",
+    "tool"
   ],
   "unityRelease": "22f1",
   "vpmDependencies": {
+    "com.vrchat.avatars": ">=3.6.0",
+    "nadena.dev.modular-avatar": ">=1.9.13",
+    "yueby.tools.editor-core": ">=0.0.5"
   }
-} 
+}
