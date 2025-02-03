@@ -24,20 +24,11 @@ jobs:
                 github-token: ${{ fromJson(secrets.PAT).token }}
                 script: |
                   const config = JSON.parse(process.env.PAT_CONFIG);
-                  console.log('Config loaded');
-                  
                   for (const target of config.targets) {
-                    console.log(`Triggering workflow in repository: ${target.repo}`);
-                    try {
-                      await github.rest.actions.createWorkflowDispatch({
-                        owner: context.repo.owner,
-                        repo: target.repo,
-                        workflow_id: target.workflow,
-                        ref: 'main'
-                      });
-                      console.log('Successfully triggered workflow');
-                    } catch (error) {
-                      console.error('Error triggering workflow:', error.message);
-                      throw error;
-                    }
+                    await github.rest.actions.createWorkflowDispatch({
+                      owner: context.repo.owner,
+                      repo: target.repo,
+                      workflow_id: target.workflow,
+                      ref: 'main'
+                    });
                   }
