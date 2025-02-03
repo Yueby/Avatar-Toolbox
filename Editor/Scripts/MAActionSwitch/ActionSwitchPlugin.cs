@@ -35,7 +35,7 @@ namespace Yueby.AvatarTools.MAActionSwitch
     internal static class ActionSwitchBuilder
     {
         private static string _toolLabel = "MA Action Switch/";
-        private static string AssetsPath => "Packages/yueby.tools.avatar-tools/Editor/Assets/MAActionSwitch";
+        private static string AssetsPath => "Packages/yueby.tools.avatar-toolbox/Editor/Assets/MAActionSwitch";
         private static string EmptyClipPath => AssetsPath + "/Animations/Empty.anim";
 
         public static void Build(GameObject avatarRootObject)
