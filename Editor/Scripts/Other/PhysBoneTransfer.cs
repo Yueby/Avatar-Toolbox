@@ -57,6 +57,7 @@ namespace YuebyAvatarTools.PhysBoneTransfer.Editor
         private static bool _isTransferParticleSystems = true;
         private static bool _isTransferConstraints = true;
         private static bool _isTransferMaterialSwitcher = true;
+        private static bool _isSearchSameNameObjects = true;
 
         // 添加缓存字典
         private Dictionary<Transform, string> _pathCache = new Dictionary<Transform, string>();
@@ -144,6 +145,25 @@ namespace YuebyAvatarTools.PhysBoneTransfer.Editor
             return null;
         }
 
+        /// <summary>
+        /// 在目标骨骼中查找与源对象同名的对象，不考虑层级结构
+        /// </summary>
+        /// <param name="sourceName">源对象名称</param>
+        /// <param name="targetRoot">目标根对象</param>
+        /// <returns>找到的同名对象，如有多个则返回第一个</returns>
+        private Transform FindObjectByNameRecursive(string sourceName, Transform targetRoot)
+        {
+            // 递归搜索所有子对象
+            Transform[] allChildren = targetRoot.GetComponentsInChildren<Transform>(true);
+            foreach (Transform child in allChildren)
+            {
+                if (child != targetRoot && child.name == sourceName)
+                    return child;
+            }
+            
+            return null;
+        }
+
         private GameObject GetOrCreateTargetObject(Transform source, Transform targetRoot, bool createIfNotExist = true)
         {
             if (source == null || targetRoot == null)
@@ -167,7 +187,18 @@ namespace YuebyAvatarTools.PhysBoneTransfer.Editor
                 return existingTarget.gameObject;
             }
 
-            // 4. 如果允许创建，创建新对象
+            // 4. 新增: 如果启用了同名对象查找，尝试查找同名对象（不考虑层级）
+            if (_isSearchSameNameObjects && source.name != "root")
+            {
+                var sameNameTarget = FindObjectByNameRecursive(source.name, targetRoot);
+                if (sameNameTarget != null)
+                {
+                    _targetCache[source] = sameNameTarget;
+                    return sameNameTarget.gameObject;
+                }
+            }
+
+            // 5. 如果允许创建，创建新对象
             if (createIfNotExist)
             {
                 var newTarget = CreateTargetObject(source, targetRoot, relativePath);
@@ -218,6 +249,7 @@ namespace YuebyAvatarTools.PhysBoneTransfer.Editor
             EditorUI.VerticalEGLTitled("Settings", () =>
             {
                 _isOnlyTransferInArmature = EditorUI.Toggle(_isOnlyTransferInArmature, "Only Transfer In Armature");
+                _isSearchSameNameObjects = EditorUI.Toggle(_isSearchSameNameObjects, "Search For Same Name Objects");
                 EditorUI.Line(LineType.Horizontal);
                 _isTransferMAMergeArmature = EditorUI.Toggle(_isTransferMAMergeArmature, "Transfer ModularAvatarMergeArmature");
                 _isTransferMAMergeAnimator = EditorUI.Toggle(_isTransferMAMergeAnimator, "Transfer ModularAvatarMergeAnimator");
