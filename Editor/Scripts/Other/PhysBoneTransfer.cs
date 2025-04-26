@@ -58,6 +58,8 @@ namespace YuebyAvatarTools.PhysBoneTransfer.Editor
         private static bool _isTransferConstraints = true;
         private static bool _isTransferMaterialSwitcher = true;
         private static bool _isSearchSameNameObjects = true;
+        private static bool _isTransferPhysBone = true;
+        private static bool _isTransferPhysBoneCollider = true;
 
         // 添加缓存字典
         private Dictionary<Transform, string> _pathCache = new Dictionary<Transform, string>();
@@ -251,6 +253,8 @@ namespace YuebyAvatarTools.PhysBoneTransfer.Editor
                 _isOnlyTransferInArmature = EditorUI.Toggle(_isOnlyTransferInArmature, "Only Transfer In Armature");
                 _isSearchSameNameObjects = EditorUI.Toggle(_isSearchSameNameObjects, "Search For Same Name Objects");
                 EditorUI.Line(LineType.Horizontal);
+                _isTransferPhysBone = EditorUI.Toggle(_isTransferPhysBone, "Transfer PhysBone");
+                _isTransferPhysBoneCollider = EditorUI.Toggle(_isTransferPhysBoneCollider, "Transfer PhysBoneCollider");
                 _isTransferMAMergeArmature = EditorUI.Toggle(_isTransferMAMergeArmature, "Transfer ModularAvatarMergeArmature");
                 _isTransferMAMergeAnimator = EditorUI.Toggle(_isTransferMAMergeAnimator, "Transfer ModularAvatarMergeAnimator");
                 _isTransferMABoneProxy = EditorUI.Toggle(_isTransferMABoneProxy, "Transfer ModularAvatarBoneProxy");
@@ -436,25 +440,21 @@ namespace YuebyAvatarTools.PhysBoneTransfer.Editor
 
                 try
                 {
-                    // PhysBone 转移
-                    if (sourceChild.GetComponent<VRCPhysBone>() != null)
+                    if (_isTransferPhysBone && sourceChild.GetComponent<VRCPhysBone>() != null)
                     {
                         TransferPhysBone(sourceChild, targetRoot, stats);
                     }
 
-                    // Constraint 转移
                     if (_isTransferConstraints && HasAnyConstraint(sourceChild))
                     {
                         TransferConstraint(sourceChild, targetRoot, stats);
                     }
 
-                    // ParticleSystem 转移
                     if (_isTransferParticleSystems && HasParticleSystem(sourceChild))
                     {
                         TransferParticleSystems(sourceChild, targetRoot, stats);
                     }
 
-                    // 其他组件转移
                     if (HasAnyTargetComponent(sourceChild))
                     {
                         TransferComponents(sourceChild, targetRoot, stats);
@@ -658,7 +658,11 @@ namespace YuebyAvatarTools.PhysBoneTransfer.Editor
                     }
                 }
 
-                targetPhysBone.colliders = GetColliders(targetPhysBone.colliders, current, stats);
+                // 仅在允许转移PhysBoneCollider时才替换碰撞器
+                if (_isTransferPhysBoneCollider)
+                {
+                    targetPhysBone.colliders = GetColliders(targetPhysBone.colliders, current, stats);
+                }
 
                 // 只有在所有操作都成功完成后才记录成功
                 bool success = targetGo != null && targetPhysBone != null;

@@ -142,11 +142,11 @@ namespace Yueby.AvatarTools.VRCEditorOptimize
                         var cost = ((ExpressionParameters)target).CalcTotalCost();
                         if (cost > ExpressionParameters.MAX_PARAMETER_COST)
                         {
-                            _paramRl.IsDisableAddButton = true;
+                            _paramRl.AddButtonEnabled = false;
                             EditorGUILayout.HelpBox(Localization.Get("parameters_out_of_memory"), MessageType.Error);
                         }
                         else
-                            _paramRl.IsDisableAddButton = false;
+                            _paramRl.AddButtonEnabled = true;
 
                         //Info
                         EditorGUILayout.HelpBox(Localization.Get("parameters_tip_1"), MessageType.Info);

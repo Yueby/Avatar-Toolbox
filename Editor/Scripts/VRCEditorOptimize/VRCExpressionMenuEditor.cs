@@ -38,7 +38,7 @@ namespace Yueby.AvatarTools.VRCEditorOptimize
 
                     EditorGUI.ProgressBar(rect, value, $"{count}/{MAX_CONTROLS}");
 
-                    _menuRl.IsDisableAddButton = count >= MAX_CONTROLS;
+                    _menuRl.AddButtonEnabled = count < MAX_CONTROLS;
                 }
             };
             _menuRl.OnAdd += () =>
