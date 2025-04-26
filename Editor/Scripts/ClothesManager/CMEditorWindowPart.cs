@@ -259,7 +259,7 @@ namespace Yueby.AvatarTools.ClothesManager
         private string GetPreviewPath()
         {
             var path =
-                "Packages/yueby.tools.avatar-tools/Editor/Assets/ClothesManager/Preview.renderTexture";
+                "Packages/yueby.tools.avatar-toolbox/Editor/Assets/ClothesManager/Preview.renderTexture";
             return path;
         }
 
@@ -2107,9 +2107,18 @@ namespace Yueby.AvatarTools.ClothesManager
 
         private void GetClothesCapture()
         {
+
             var categoryPath = GetCapturePath() + "/" + _currentClothesCategory.Name + "/";
             if (!Directory.Exists(categoryPath))
+            {
                 Directory.CreateDirectory(categoryPath);
+
+            }
+            if (string.IsNullOrEmpty(_clothes.Name))
+            {
+                Debug.Log("Clothes Name is null");
+                return;
+            }
 
             var icon = EditorUtils.SaveRTToFile(
                 categoryPath + _clothes.Name + ".png",

@@ -1,5 +1,5 @@
 {
-  "name": "yueby.tools.avatar-tools.Runtime",
+  "name": "yueby.tools.avatar-toolbox.Runtime",
   "rootNamespace": "",
   "references": [
     "GUID:fc900867c0f47cd49b6e2ae4ef907300",
