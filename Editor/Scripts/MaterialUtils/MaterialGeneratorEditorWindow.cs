@@ -310,8 +310,17 @@ namespace Yueby
                     AssetDatabase.DeleteAsset(materialPath);
                 }
 
-                var newMaterial = new Material(_templateMaterial);
-                newMaterial.mainTexture = texture;
+                var newMaterial = new Material(_templateMaterial)
+                {
+                    mainTexture = texture,
+                    parent = _templateMaterial
+                };
+
+                if (_templateMaterial.GetTexture("_OutlineTex") != null)
+                {
+                    newMaterial.SetTexture("_OutlineTex", texture);
+                }
+
                 AssetDatabase.CreateAsset(newMaterial, materialPath);
                 successCount++;
             }
