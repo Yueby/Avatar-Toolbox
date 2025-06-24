@@ -50,7 +50,6 @@ namespace Yueby.AvatarTools.VRCEditorOptimize
                 var cost = ((ExpressionParameters)target).CalcTotalCost();
                 var value = (cost * 1f) / (ExpressionParameters.MAX_PARAMETER_COST * 1f);
 
-
                 EditorGUI.ProgressBar(rect, value, $"{cost}/{ExpressionParameters.MAX_PARAMETER_COST}");
             }
         }
@@ -78,7 +77,6 @@ namespace Yueby.AvatarTools.VRCEditorOptimize
             }, space: 0f);
         }
 
-
         private float OnListDraw(Rect rect, int index, bool arg2, bool arg3)
         {
             if (_parametersProperty.arraySize < index + 1)
@@ -104,7 +102,6 @@ namespace Yueby.AvatarTools.VRCEditorOptimize
             EditorGUI.PropertyField(syncedRect, synced, new GUIContent(""));
             EditorGUI.PropertyField(savedRect, saved, new GUIContent(""));
 
-
             if (valueType.intValue == (int)ExpressionParameters.ValueType.Bool)
             {
                 var value = EditorGUI.Toggle(defaultRect, defaultValue.floatValue > 0f);
@@ -123,17 +120,16 @@ namespace Yueby.AvatarTools.VRCEditorOptimize
             return EditorGUIUtility.singleLineHeight + 5;
         }
 
-
         public override void OnInspectorGUI()
         {
-            Localization.DrawLanguageUI(Screen.width - 120);
-            EditorGUILayout.Space(10);
+            var rect = GUILayoutUtility.GetRect(10, EditorGUIUtility.singleLineHeight * 1.2f);
+            Localization.DrawLanguageUI(rect.x, rect.y);
+            // EditorGUILayout.Space();
             serializedObject.Update();
             {
                 _paramRl.DoLayout(Localization.Get("parameters"), new Vector2(0, 600), false, false);
 
                 _scrollPos = _paramRl.ScrollPos;
-
 
                 EditorUI.VerticalEGL(() =>
                 {
@@ -181,7 +177,6 @@ namespace Yueby.AvatarTools.VRCEditorOptimize
             }
             serializedObject.ApplyModifiedProperties();
         }
-
 
         void InitExpressionParameters(bool populateWithDefault)
         {

@@ -16,6 +16,8 @@ namespace Yueby
         private bool _overwriteExisting;
         private bool _showNaming;
         private Dictionary<int, string> _customNames = new Dictionary<int, string>();
+        private bool _useOutlineTexture = false;
+        private bool _useMain2ndTexture = false;
 
         [MenuItem("Tools/YuebyTools/Utils/MaterialGenerator", false, 10)]
         private static void ShowWindow()
@@ -41,6 +43,8 @@ namespace Yueby
             _showNaming = EditorPrefs.GetBool("MaterialGenerator_ShowNaming", false);
             var customNamesJson = EditorPrefs.GetString("MaterialGenerator_CustomNames", "{}");
             _customNames = JsonUtility.FromJson<Dictionary<int, string>>(customNamesJson);
+            _useOutlineTexture = EditorPrefs.GetBool("MaterialGenerator_UseOutlineTexture", false);
+            _useMain2ndTexture = EditorPrefs.GetBool("MaterialGenerator_UseMain2ndTexture", false);
         }
 
         private void SavePrefs()
@@ -52,6 +56,8 @@ namespace Yueby
             EditorPrefs.SetBool("MaterialGenerator_ShowNaming", _showNaming);
             var customNamesJson = JsonUtility.ToJson(_customNames);
             EditorPrefs.SetString("MaterialGenerator_CustomNames", customNamesJson);
+            EditorPrefs.SetBool("MaterialGenerator_UseOutlineTexture", _useOutlineTexture);
+            EditorPrefs.SetBool("MaterialGenerator_UseMain2ndTexture", _useMain2ndTexture);
         }
 
         private void InitializeList()
@@ -157,6 +163,7 @@ namespace Yueby
                     EditorGUILayout.LabelField("Template Material");
                     EditorUI.HorizontalEGL(() =>
                     {
+                        EditorGUI.BeginChangeCheck();
                         _templateMaterial = EditorGUILayout.ObjectField(
                             _templateMaterial,
                             typeof(Material),
@@ -166,6 +173,12 @@ namespace Yueby
                         if (_templateMaterial != null && GUILayout.Button("Locate", GUILayout.Width(50)))
                         {
                             EditorGUIUtility.PingObject(_templateMaterial);
+                        }
+
+                        if (EditorGUI.EndChangeCheck() && _templateMaterial != null)
+                        {
+                            _materialNameSuffix = "_" + _templateMaterial.name;
+                            SavePrefs();
                         }
                     });
 
@@ -223,6 +236,11 @@ namespace Yueby
                                 }
                             }
                         });
+
+                        // 添加轮廓纹理设置
+                        EditorGUILayout.Space(5);
+                        _useOutlineTexture = EditorGUILayout.ToggleLeft("Use Outline Texture", _useOutlineTexture);
+                        _useMain2ndTexture = EditorGUILayout.ToggleLeft("Use Main2nd Texture", _useMain2ndTexture);
                     });
 
                     EditorGUILayout.Space(10);
@@ -316,9 +334,16 @@ namespace Yueby
                     parent = _templateMaterial
                 };
 
-                if (_templateMaterial.GetTexture("_OutlineTex") != null)
+                // 设置轮廓纹理
+                if (_useOutlineTexture)
                 {
                     newMaterial.SetTexture("_OutlineTex", texture);
+                }
+
+                // 设置第二主色
+                if (_useMain2ndTexture)
+                {
+                    newMaterial.SetTexture("_Main2ndTex", texture);
                 }
 
                 AssetDatabase.CreateAsset(newMaterial, materialPath);

@@ -4,7 +4,11 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [1.0.5] - 2025-04-27
+## [1.0.7] - 2025-06-24
+### Added
+- Add some tools
+
+## [1.0.6] - 2025-04-27
 ### Added
 - Make sure outline texture sync
 

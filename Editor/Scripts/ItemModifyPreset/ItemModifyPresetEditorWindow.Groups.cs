@@ -493,6 +493,20 @@ public partial class ItemModifyPresetEditorWindow
 
                     if (shouldSyncAll)
                     {
+                        // 获取当前选中的材质预设名称
+                        string selectedPresetName = materialPresets[newMaterialIndex].presetName;
+
+                        // 从预设名称中提取颜色名称
+                        string colorName = MaterialUtility.ExtractColorNameFromPreset(selectedPresetName);
+
+                        // 如果找到颜色名称，更新分组名称
+                        if (!string.IsNullOrEmpty(colorName))
+                        {
+                            var groupElement = _presetGroupsProperty.GetArrayElementAtIndex(_selectedGroupIndex);
+                            var groupNameProp = groupElement.FindPropertyRelative("groupName");
+                            groupNameProp.stringValue = colorName;
+                        }
+
                         // 遍历所有其他条目
                         for (int i = 1; i < entriesProperty.arraySize; i++)
                         {

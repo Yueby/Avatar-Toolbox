@@ -25,7 +25,7 @@ namespace Yueby.AvatarTools.VRCEditorOptimize
         private void OnEnable()
         {
             _controls = serializedObject.FindProperty("controls");
-            _menuRl = new YuebyReorderableList(serializedObject, _controls, true, true,false,Repaint);
+            _menuRl = new YuebyReorderableList(serializedObject, _controls, true, true, false, Repaint);
             _menuRl.OnDraw += OnDrawMenuElement;
             _menuRl.OnTitleDraw += () =>
             {
@@ -58,7 +58,8 @@ namespace Yueby.AvatarTools.VRCEditorOptimize
         {
             serializedObject.Update();
 
-            Localization.DrawLanguageUI(Screen.width - 120, 55);
+            var rect = GUILayoutUtility.GetRect(10, EditorGUIUtility.singleLineHeight * 1.2f);
+            Localization.DrawLanguageUI(rect.x, rect.y);
 
             EditorUI.VerticalEGL("Badge", () =>
             {
@@ -67,7 +68,6 @@ namespace Yueby.AvatarTools.VRCEditorOptimize
                 if (_activeDescriptor == null)
                     EditorGUILayout.HelpBox(Localization.Get("no_active_avatar"), MessageType.Error);
             }, true, 5, true, 6);
-
 
             //Controls
             _menuRl.DoLayout(Localization.Get("controls"), false, false);
@@ -103,7 +103,6 @@ namespace Yueby.AvatarTools.VRCEditorOptimize
                 var nameRect = new Rect(iconRect.x + iconRect.width + 2, iconRect.y, nowRect.width - iconRect.width - 4, EditorGUIUtility.singleLineHeight);
                 var typeRect = new Rect(nameRect.x, nameRect.y + nameRect.height + 2, nameRect.width, nameRect.height);
                 var parameterRect = new Rect(iconRect.x, iconRect.y + iconRect.height + 2, nowRect.width - 4, EditorGUIUtility.singleLineHeight);
-
 
                 DrawPropertyField(nameRect, name, Localization.Get("name"));
                 DrawPopup(typeRect, type, Localization.Get("type"));
@@ -225,7 +224,6 @@ namespace Yueby.AvatarTools.VRCEditorOptimize
 
             rect = DrawLine(rect);
 
-
             rect = DrawParameterDropDownGUI(rect, subParameters.GetArrayElementAtIndex(0), Localization.Get("parameter") + " " + Localization.Get("up"), false);
             rect = DrawParameterDropDownGUI(new Rect(rect.x, rect.y + rect.height + 2, rect.width, rect.height), subParameters.GetArrayElementAtIndex(1), Localization.Get("parameter") + " " + Localization.Get("right"), false);
             rect = DrawParameterDropDownGUI(new Rect(rect.x, rect.y + rect.height + 2, rect.width, rect.height), subParameters.GetArrayElementAtIndex(2), Localization.Get("parameter") + " " + Localization.Get("down"), false);
@@ -312,7 +310,6 @@ namespace Yueby.AvatarTools.VRCEditorOptimize
                 EditorGUI.LabelField(rect, new GUIContent(name), EditorStyles.centeredGreyMiniLabel);
         }
 
-
         private Rect DrawLine(Rect rect)
         {
             const float height = 2f;
@@ -350,7 +347,6 @@ namespace Yueby.AvatarTools.VRCEditorOptimize
             EditorGUI.LabelField(labelRect, new GUIContent(label, tooltip));
             onDraw?.Invoke(pRect);
         }
-
 
         private void SelectAvatarDescriptor()
         {
@@ -467,7 +463,6 @@ namespace Yueby.AvatarTools.VRCEditorOptimize
 
             //Text field
             parameterName.stringValue = EditorGUI.TextField(textRect, parameterName.stringValue);
-
 
             if (!parameterFound)
             {
