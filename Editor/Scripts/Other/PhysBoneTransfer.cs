@@ -60,6 +60,8 @@ namespace YuebyAvatarTools.PhysBoneTransfer.Editor
         private static bool _isSearchSameNameObjects = true;
         private static bool _isTransferPhysBone = true;
         private static bool _isTransferPhysBoneCollider = true;
+        private static bool _isTransferBlendShapes = true;
+        private static bool _isSyncActive = true;
 
         // 添加缓存字典
         private Dictionary<Transform, string> _pathCache = new Dictionary<Transform, string>();
@@ -262,6 +264,8 @@ namespace YuebyAvatarTools.PhysBoneTransfer.Editor
                 _isTransferParticleSystems = EditorUI.Toggle(_isTransferParticleSystems, "Transfer Particle Systems");
                 _isTransferConstraints = EditorUI.Toggle(_isTransferConstraints, "Transfer Constraints");
                 _isTransferMaterialSwitcher = EditorUI.Toggle(_isTransferMaterialSwitcher, "Transfer MaterialSwitcher");
+                _isTransferBlendShapes = EditorUI.Toggle(_isTransferBlendShapes, "Transfer BlendShapes");
+                _isSyncActive = EditorUI.Toggle(_isSyncActive, "Sync Active States");
 
                 if (GUILayout.Button("Transfer"))
                 {
@@ -405,6 +409,172 @@ namespace YuebyAvatarTools.PhysBoneTransfer.Editor
                     stats.AddError("Materials", originRenderer.name, e.Message);
                     YuebyLogger.LogError("PhysBoneTransfer", $"Error transferring materials for {originRenderer.name}: {e}");
                 }
+            }
+        }
+
+        private void TransferBlendShapes(Transform current, TransferStats stats)
+        {
+            var sourceSkinnedMeshRenderers = _origin.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+
+            if (sourceSkinnedMeshRenderers.Length <= 0) return;
+
+            foreach (var sourceRenderer in sourceSkinnedMeshRenderers)
+            {
+                stats.TotalComponents++;
+                try
+                {
+                    var sourcePath = VRC.Core.ExtensionMethods.GetHierarchyPath(sourceRenderer.transform);
+
+                    // 查找同名的目标 SkinnedMeshRenderer
+                    var targetGo = GetOrCreateTargetObject(sourceRenderer.transform, current);
+                    var found = targetGo != null;
+
+                    if (!found)
+                    {
+                        stats.FailedTransfers++;
+                        stats.AddSuccess("BlendShapes", sourcePath, GetTargetPath(sourceRenderer.transform, current), false);
+                        continue;
+                    }
+
+                    var targetRenderer = targetGo.GetComponent<SkinnedMeshRenderer>();
+                    if (targetRenderer == null)
+                    {
+                        YuebyLogger.LogWarning("PhysBoneTransfer", $"Skipping BlendShape transfer for {targetGo.name}: No SkinnedMeshRenderer component found");
+                        stats.FailedTransfers++;
+                        continue;
+                    }
+
+                    // 获取源和目标的网格
+                    var sourceMesh = sourceRenderer.sharedMesh;
+                    var targetMesh = targetRenderer.sharedMesh;
+
+                    if (sourceMesh == null || targetMesh == null)
+                    {
+                        YuebyLogger.LogWarning("PhysBoneTransfer", $"Skipping BlendShape transfer for {targetGo.name}: Source or target mesh is null");
+                        stats.FailedTransfers++;
+                        continue;
+                    }
+
+                    // 获取源网格的 BlendShape 权重
+                    var sourceBlendShapeCount = sourceMesh.blendShapeCount;
+                    if (sourceBlendShapeCount == 0)
+                    {
+                        // 没有 BlendShape，跳过
+                        continue;
+                    }
+
+                    // 注册撤销操作
+                    Undo.RegisterCompleteObjectUndo(targetRenderer, "Transfer BlendShapes");
+
+                    int transferredCount = 0;
+                    int totalBlendShapes = 0;
+
+                    // 遍历源网格的所有 BlendShape
+                    for (int i = 0; i < sourceBlendShapeCount; i++)
+                    {
+                        var sourceBlendShapeName = sourceMesh.GetBlendShapeName(i);
+                        var sourceWeight = sourceRenderer.GetBlendShapeWeight(i);
+
+                        // 在目标网格中查找同名的 BlendShape
+                        var targetBlendShapeIndex = targetMesh.GetBlendShapeIndex(sourceBlendShapeName);
+
+                        if (targetBlendShapeIndex >= 0)
+                        {
+                            // 找到同名的 BlendShape，转移权重
+                            targetRenderer.SetBlendShapeWeight(targetBlendShapeIndex, sourceWeight);
+                            transferredCount++;
+                        }
+
+                        totalBlendShapes++;
+                    }
+
+                    // 标记为已修改
+                    EditorUtility.SetDirty(targetRenderer);
+
+                    if (transferredCount > 0)
+                    {
+                        stats.SuccessfulTransfers++;
+                        stats.AddSuccess($"BlendShapes ({transferredCount}/{totalBlendShapes})", sourcePath, GetTargetPath(sourceRenderer.transform, current), true);
+                        YuebyLogger.LogInfo("PhysBoneTransfer", $"Transferred {transferredCount}/{totalBlendShapes} BlendShapes from {sourcePath} to {GetTargetPath(sourceRenderer.transform, current)}");
+                    }
+                    else
+                    {
+                        stats.FailedTransfers++;
+                        stats.AddError("BlendShapes", sourcePath, "No matching BlendShapes found in target mesh");
+                    }
+                }
+                catch (Exception e)
+                {
+                    stats.FailedTransfers++;
+                    stats.AddError("BlendShapes", sourceRenderer.name, e.Message);
+                    YuebyLogger.LogError("PhysBoneTransfer", $"Error transferring BlendShapes for {sourceRenderer.name}: {e}");
+                }
+            }
+        }
+
+        private void SyncActiveStates(Transform current, TransferStats stats)
+        {
+            // 获取源骨骼下的所有对象
+            var sourceTransforms = _origin.GetComponentsInChildren<Transform>(true);
+
+            if (sourceTransforms.Length <= 0) return;
+
+            int syncedCount = 0;
+            int totalObjects = 0;
+
+            foreach (var sourceTransform in sourceTransforms)
+            {
+                totalObjects++;
+                try
+                {
+                    var sourcePath = VRC.Core.ExtensionMethods.GetHierarchyPath(sourceTransform);
+                    var sourceActive = sourceTransform.gameObject.activeSelf;
+
+                    // 查找对应的目标对象
+                    var targetGo = GetOrCreateTargetObject(sourceTransform, current);
+                    if (targetGo == null)
+                    {
+                        // 如果找不到目标对象，跳过
+                        continue;
+                    }
+
+                    var targetActive = targetGo.activeSelf;
+
+                    // 如果激活状态不同，则同步
+                    if (sourceActive != targetActive)
+                    {
+                        // 注册撤销操作
+                        Undo.RegisterCompleteObjectUndo(targetGo, "Sync Active State");
+
+                        // 设置目标对象的激活状态
+                        targetGo.SetActive(sourceActive);
+
+                        // 标记为已修改
+                        EditorUtility.SetDirty(targetGo);
+
+                        syncedCount++;
+
+                        YuebyLogger.LogInfo("PhysBoneTransfer", $"Synced active state: {sourcePath} ({sourceActive} -> {targetGo.name} ({sourceActive}))");
+                    }
+                }
+                catch (Exception e)
+                {
+                    stats.AddError("ActiveState", sourceTransform.name, e.Message);
+                    YuebyLogger.LogError("PhysBoneTransfer", $"Error syncing active state for {sourceTransform.name}: {e}");
+                }
+            }
+
+            // 记录统计信息
+            if (syncedCount > 0)
+            {
+                stats.SuccessfulTransfers++;
+                stats.AddSuccess($"ActiveStates ({syncedCount}/{totalObjects})", _origin.name, current.name, true);
+                YuebyLogger.LogInfo("PhysBoneTransfer", $"Synced {syncedCount}/{totalObjects} active states from {_origin.name} to {current.name}");
+            }
+            else
+            {
+                // 即使没有同步任何对象，也记录为成功（因为没有需要同步的）
+                stats.AddSuccess("ActiveStates (0/0)", _origin.name, current.name, true);
             }
         }
 
@@ -951,6 +1121,10 @@ namespace YuebyAvatarTools.PhysBoneTransfer.Editor
                     TransferMaterials(selection.transform, stats);
                 if (_isTransferMaterialSwitcher)
                     TransferMaterialSwitcher(selection, stats);
+                if (_isTransferBlendShapes)
+                    TransferBlendShapes(selection.transform, stats);
+                if (_isSyncActive)
+                    SyncActiveStates(selection.transform, stats);
 
                 return true;
             }
