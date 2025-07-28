@@ -155,7 +155,7 @@ class MaterialPresetDrawer : ModalEditorWindowDrawer<MaterialPresetDrawer.Preset
             rect.y += 2;
             float lineHeight = EditorGUIUtility.singleLineHeight;
             float spacing = 4f;
-            
+
             // 左侧颜色条
             Color themeColor = item.themeColor;
             themeColor.a = 1f; // 确保不透明
@@ -168,13 +168,13 @@ class MaterialPresetDrawer : ModalEditorWindowDrawer<MaterialPresetDrawer.Preset
             // 第二行 - 预设名称
             rect.y += lineHeight + spacing;
             EditorGUI.LabelField(new Rect(rect.x + 10, rect.y, 80, lineHeight), "预设名称:", _itemLabelStyle);
-            
+
             // 设置一个较好的默认名称
             if (item.presetName == "新预设" && item.material != null)
             {
                 item.presetName = item.material.name + " 预设";
             }
-            
+
             EditorGUI.BeginChangeCheck();
             string newName = EditorGUI.TextField(new Rect(rect.x + 90, rect.y, rect.width - 180, lineHeight), item.presetName);
             if (EditorGUI.EndChangeCheck())
@@ -185,7 +185,7 @@ class MaterialPresetDrawer : ModalEditorWindowDrawer<MaterialPresetDrawer.Preset
             // 第三行 - 主题色和生成按钮
             rect.y += lineHeight + spacing;
             EditorGUI.LabelField(new Rect(rect.x + 10, rect.y, 80, lineHeight), "主题色:", _itemLabelStyle);
-            
+
             // 主题色字段
             EditorGUI.BeginChangeCheck();
             Color newColor = EditorGUI.ColorField(new Rect(rect.x + 90, rect.y, 120, lineHeight), GUIContent.none, item.themeColor, true, true, false);
@@ -193,7 +193,7 @@ class MaterialPresetDrawer : ModalEditorWindowDrawer<MaterialPresetDrawer.Preset
             {
                 item.themeColor = newColor;
             }
-            
+
             // 自动提取按钮
             if (GUI.Button(new Rect(rect.x + 220, rect.y, 80, lineHeight), "从材质"))
             {
@@ -202,13 +202,13 @@ class MaterialPresetDrawer : ModalEditorWindowDrawer<MaterialPresetDrawer.Preset
                     item.themeColor = MaterialUtility.ExtractThemeColorFromMaterial(item.material);
                 }
             }
-            
+
             // 自动生成按钮
             if (GUI.Button(new Rect(rect.x + 305, rect.y, 80, lineHeight), "随机色"))
             {
                 item.themeColor = MaterialUtility.GenerateRandomColor();
             }
-            
+
             return (lineHeight * 3) + (spacing * 2) + 4;
         };
     }
@@ -226,7 +226,7 @@ class MaterialPresetDrawer : ModalEditorWindowDrawer<MaterialPresetDrawer.Preset
         {
             InitializeMaterialsList();
         }
-        
+
         // 确保样式初始化
         if (_headerStyle == null)
         {
@@ -240,10 +240,10 @@ class MaterialPresetDrawer : ModalEditorWindowDrawer<MaterialPresetDrawer.Preset
         EditorGUILayout.Space(10);
         EditorGUILayout.LabelField("材质预设创建工具", _headerStyle);
         EditorGUILayout.Space(5);
-        
+
         // 基本信息区域（使用Box提供视觉分组）
         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-        
+
         // 渲染器信息
         EditorGUILayout.Space(5);
         EditorGUILayout.LabelField("渲染器信息", _subHeaderStyle);
@@ -256,7 +256,7 @@ class MaterialPresetDrawer : ModalEditorWindowDrawer<MaterialPresetDrawer.Preset
             EditorGUILayout.ObjectField(Data.renderer, typeof(Renderer), true);
             EditorGUILayout.EndHorizontal();
         }
-        
+
         // 渲染器路径
         if (Data.renderer != null)
         {
@@ -265,10 +265,10 @@ class MaterialPresetDrawer : ModalEditorWindowDrawer<MaterialPresetDrawer.Preset
             EditorGUILayout.SelectableLabel(GetGameObjectPath(Data.renderer.gameObject), EditorStyles.textField, GUILayout.Height(EditorGUIUtility.singleLineHeight));
             EditorGUILayout.EndHorizontal();
         }
-        
+
         EditorGUILayout.Space(5);
         EditorGUILayout.EndVertical();
-        
+
         // 槽位选择区域
         EditorGUILayout.Space(10);
         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
@@ -300,7 +300,7 @@ class MaterialPresetDrawer : ModalEditorWindowDrawer<MaterialPresetDrawer.Preset
             // 设置默认槽位索引为0
             Data.globalSlotIndex = 0;
         }
-        
+
         EditorGUILayout.Space(5);
         EditorGUILayout.EndVertical();
 
@@ -312,7 +312,7 @@ class MaterialPresetDrawer : ModalEditorWindowDrawer<MaterialPresetDrawer.Preset
         {
             // 辅助操作按钮
             EditorGUILayout.BeginHorizontal();
-            
+
             if (GUILayout.Button("全部自动命名", _buttonStyle, GUILayout.Width(120)))
             {
                 foreach (var item in Data.materialItems)
@@ -323,7 +323,7 @@ class MaterialPresetDrawer : ModalEditorWindowDrawer<MaterialPresetDrawer.Preset
                     }
                 }
             }
-            
+
             if (GUILayout.Button("全部自动配色", _buttonStyle, GUILayout.Width(120)))
             {
                 foreach (var item in Data.materialItems)
@@ -334,11 +334,11 @@ class MaterialPresetDrawer : ModalEditorWindowDrawer<MaterialPresetDrawer.Preset
                     }
                 }
             }
-            
+
             EditorGUILayout.EndHorizontal();
-            
+
             // 开始滚动视图 - 使用固定高度确保可以滚动
-            _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition, 
+            _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition,
                 false, true, GUILayout.ExpandHeight(true));
 
             // 绘制材质列表
@@ -351,22 +351,25 @@ class MaterialPresetDrawer : ModalEditorWindowDrawer<MaterialPresetDrawer.Preset
         {
             EditorGUILayout.HelpBox("没有拖拽任何材质。请将材质拖拽到此处创建预设。", MessageType.Warning);
         }
+
+        // 结束主垂直布局
+        EditorGUILayout.EndVertical();
     }
-    
+
     // 获取游戏对象的层级路径
     private string GetGameObjectPath(GameObject obj)
     {
         if (obj == null) return "未知路径";
-        
+
         string path = obj.name;
         Transform parent = obj.transform.parent;
-        
+
         while (parent != null)
         {
             path = parent.name + "/" + path;
             parent = parent.parent;
         }
-        
+
         return path;
     }
 }

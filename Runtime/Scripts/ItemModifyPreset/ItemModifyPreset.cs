@@ -153,18 +153,34 @@ public class ItemModifyPreset : MonoBehaviour, IEditorOnly
             rendererPath = CalculateRendererPath(renderer);
         }
 
-        // 计算渲染器相对于根对象的路径
+        // 计算渲染器相对于组件挂载对象的路径
         private string CalculateRendererPath(Renderer renderer)
         {
             if (renderer == null)
                 return string.Empty;
 
-            // 获取渲染器的完整路径
+            // 获取渲染器相对于组件挂载对象的路径
             List<string> pathParts = new List<string>();
             Transform current = renderer.transform;
 
-            // 从渲染器向上遍历到根对象
-            while (current != null)
+            // 获取组件挂载的对象（通过renderer的根对象查找ItemModifyPreset组件）
+            Transform componentRoot = null;
+            Transform temp = current;
+            while (temp != null)
+            {
+                if (temp.GetComponent<ItemModifyPreset>() != null)
+                {
+                    componentRoot = temp;
+                    break;
+                }
+                temp = temp.parent;
+            }
+
+            if (componentRoot == null)
+                return string.Empty;
+
+            // 从渲染器向上遍历，直到到达组件挂载对象（不包含组件挂载对象）
+            while (current != null && current != componentRoot)
             {
                 pathParts.Add(current.name);
                 current = current.parent;
@@ -188,8 +204,8 @@ public class ItemModifyPreset : MonoBehaviour, IEditorOnly
             // 分割路径
             string[] pathParts = rendererPath.Split('/');
 
-            // 如果路径只有一个部分，直接在根对象上查找
-            if (pathParts.Length == 1)
+            // 如果路径为空，直接在根对象上查找
+            if (pathParts.Length == 0)
             {
                 return rootObject.GetComponent<Renderer>();
             }
@@ -197,8 +213,8 @@ public class ItemModifyPreset : MonoBehaviour, IEditorOnly
             // 查找路径对应的对象
             Transform current = rootObject.transform;
 
-            // 从第二个部分开始查找（第一个是根对象自己）
-            for (int i = 1; i < pathParts.Length; i++)
+            // 从第一个部分开始查找（相对路径）
+            for (int i = 0; i < pathParts.Length; i++)
             {
                 // 在当前层级查找子对象
                 Transform child = current.Find(pathParts[i]);

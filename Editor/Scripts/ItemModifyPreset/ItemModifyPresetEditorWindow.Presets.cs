@@ -49,6 +49,9 @@ public partial class ItemModifyPresetEditorWindow
 
         _rendererPresetsProperty = _serializedObject.FindProperty("rendererPresets");
 
+        // 自动更新渲染器引用
+        UpdateRendererReferences();
+
         // 创建渲染器预设列表
         CreateRendererPresetsList();
 
@@ -127,12 +130,12 @@ public partial class ItemModifyPresetEditorWindow
         _rendererPresetsList.Title = "渲染器预设";
 
         // 禁用自动增加数组大小，改为手动管理，与材质预设列表保持一致
-        _rendererPresetsList.AutoIncreaseArraySize = false;
+        _rendererPresetsList.AutoIncreaseArraySize = true;
 
         // 添加标题绘制回调，在标题区域添加“获取所有渲染器”按钮
         _rendererPresetsList.OnDrawTitle = () =>
         {
-            if(_rendererPresetsProperty.arraySize > 0)
+            if (_rendererPresetsProperty.arraySize > 0)
                 return;
 
             GUILayout.FlexibleSpace(); // 将按钮推到右侧
@@ -331,7 +334,7 @@ public partial class ItemModifyPresetEditorWindow
                 var uuidProp = newPreset.FindPropertyRelative("_uuid");
                 if (uuidProp != null)
                 {
-                    uuidProp.stringValue = System.Guid.NewGuid().ToString();
+                    uuidProp.stringValue = GenerateNewUUID();
                 }
 
                 // 设置材质数组
@@ -354,7 +357,7 @@ public partial class ItemModifyPresetEditorWindow
                 }
 
                 // 应用修改
-                _serializedObject.ApplyModifiedProperties();
+                ApplySerializedObjectChanges(_serializedObject, _target, Repaint);
 
                 // 更新序列化对象以获取最新状态
                 _serializedObject.UpdateIfRequiredOrScript();
@@ -441,8 +444,7 @@ public partial class ItemModifyPresetEditorWindow
         {
             rendererNameProp.stringValue = newName;
             // 应用修改
-            _serializedObject.ApplyModifiedProperties();
-            EditorUtility.SetDirty(_target);
+            ApplySerializedObjectChanges(_serializedObject, _target, Repaint);
         }
 
         EditorGUILayout.EndHorizontal();
@@ -479,8 +481,7 @@ public partial class ItemModifyPresetEditorWindow
             }
 
             // 应用修改
-            _serializedObject.ApplyModifiedProperties();
-            EditorUtility.SetDirty(_target);
+            ApplySerializedObjectChanges(_serializedObject, _target, Repaint);
 
             // 如果有效，重新创建材质预设列表
             if (_selectedRendererIndex >= 0 && _selectedRendererIndex < _rendererPresetsProperty.arraySize)
@@ -705,45 +706,15 @@ public partial class ItemModifyPresetEditorWindow
                 var uuidProp = newPreset.FindPropertyRelative("_uuid");
                 if (uuidProp != null)
                 {
-                    uuidProp.stringValue = System.Guid.NewGuid().ToString();
+                    uuidProp.stringValue = GenerateNewUUID();
                 }
 
-                // 初始化材质预设列表
+                // 初始化材质预设列表（默认为空）
                 var materialPresetsProp = newPreset.FindPropertyRelative("materialPresets");
                 if (materialPresetsProp != null)
                 {
-                    // 创建默认的材质预设
-                    materialPresetsProp.arraySize = 1;
-                    var defaultPreset = materialPresetsProp.GetArrayElementAtIndex(0);
-
-                    // 设置默认预设名称
-                    defaultPreset.FindPropertyRelative("presetName").stringValue = "默认";
-
-                    // 生成UUID
-                    var presetUuidProp = defaultPreset.FindPropertyRelative("_uuid");
-                    if (presetUuidProp != null)
-                    {
-                        presetUuidProp.stringValue = System.Guid.NewGuid().ToString();
-                    }
-
-                    // 设置材质数组
-                    var materialsProp = defaultPreset.FindPropertyRelative("materials");
-                    if (materialsProp != null && renderer.sharedMaterials != null)
-                    {
-                        materialsProp.arraySize = renderer.sharedMaterials.Length;
-                        for (int i = 0; i < renderer.sharedMaterials.Length; i++)
-                        {
-                            materialsProp.GetArrayElementAtIndex(i).objectReferenceValue = renderer.sharedMaterials[i];
-                        }
-                    }
-
-                    // 设置主题色 - 从材质中提取
-                    var themeColorProp = defaultPreset.FindPropertyRelative("themeColor");
-                    if (themeColorProp != null)
-                    {
-                        themeColorProp.colorValue = MaterialUtility.ExtractThemeColorFromMaterial(
-                            renderer.sharedMaterials.Length > 0 ? renderer.sharedMaterials[0] : null);
-                    }
+                    // 清空材质预设列表，默认为0个预设
+                    materialPresetsProp.ClearArray();
                 }
 
                 count++;
@@ -934,7 +905,7 @@ public partial class ItemModifyPresetEditorWindow
                     var uuidProp = newPreset.FindPropertyRelative("_uuid");
                     if (uuidProp != null)
                     {
-                        uuidProp.stringValue = System.Guid.NewGuid().ToString();
+                        uuidProp.stringValue = GenerateNewUUID();
                     }
                     else
                     {
@@ -995,7 +966,7 @@ public partial class ItemModifyPresetEditorWindow
                 var uuidProp = newPreset.FindPropertyRelative("_uuid");
                 if (uuidProp != null)
                 {
-                    uuidProp.stringValue = System.Guid.NewGuid().ToString();
+                    uuidProp.stringValue = GenerateNewUUID();
                 }
                 else
                 {
@@ -1058,40 +1029,7 @@ public partial class ItemModifyPresetEditorWindow
             // 标记为已修改
             EditorUtility.SetDirty(_target);
 
-            Debug.Log($"成功创建了 {createdPresets} 个材质预设（包含新增和覆盖）");
         }
-        else
-        {
-            Debug.Log("没有新材质被添加，预设创建已取消");
-        }
-    }
-
-    // 计算渲染器相对于根对象的路径
-    private string CalculateRendererPath(Renderer renderer, GameObject rootObject)
-    {
-        if (renderer == null || rootObject == null)
-            return string.Empty;
-
-        // 获取渲染器的完整路径
-        List<string> pathParts = new List<string>();
-        Transform current = renderer.transform;
-        Transform rootTransform = rootObject.transform;
-
-        // 从渲染器向上遍历直到根对象
-        while (current != null && current != rootTransform.parent)
-        {
-            pathParts.Add(current.name);
-
-            // 如果到达根对象，停止遍历
-            if (current == rootTransform)
-                break;
-
-            current = current.parent;
-        }
-
-        // 反转路径并用斜杠连接
-        pathParts.Reverse();
-        return string.Join("/", pathParts.ToArray());
     }
 
     // 添加空渲染器
@@ -1120,7 +1058,7 @@ public partial class ItemModifyPresetEditorWindow
         var uuidProp = newPreset.FindPropertyRelative("_uuid");
         if (uuidProp != null)
         {
-            uuidProp.stringValue = System.Guid.NewGuid().ToString();
+            uuidProp.stringValue = GenerateNewUUID();
         }
 
         // 初始化材质预设列表
@@ -1147,25 +1085,90 @@ public partial class ItemModifyPresetEditorWindow
         EditorUtility.SetDirty(_target);
     }
 
+    // 自动更新渲染器引用
+    private void UpdateRendererReferences()
+    {
+        if (_target == null) return;
+
+        bool hasChanges = false;
+
+        // 遍历所有渲染器预设
+        for (int i = 0; i < _target.rendererPresets.Count; i++)
+        {
+            var preset = _target.rendererPresets[i];
+            if (preset == null) continue;
+
+            // 如果直接引用为空或无效，尝试通过路径查找
+            if (preset.renderer == null || !IsValidRenderer(preset.renderer))
+            {
+                if (!string.IsNullOrEmpty(preset.RendererPath))
+                {
+                    Renderer foundRenderer = preset.FindRendererByPath(_target.gameObject);
+                    if (foundRenderer != null)
+                    {
+                        // 更新渲染器引用
+                        preset.UpdateRenderer(foundRenderer);
+                        hasChanges = true;
+
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"无法通过路径找到渲染器: {preset.RendererPath}");
+                    }
+                }
+            }
+        }
+
+        // 如果有更改，标记为已修改
+        if (hasChanges)
+        {
+            EditorUtility.SetDirty(_target);
+        }
+    }
+
+    // 检查渲染器是否有效
+    private bool IsValidRenderer(Renderer renderer)
+    {
+        return renderer != null && renderer.gameObject != null;
+    }
+
     // 应用材质预设
     private void ApplyMaterialPreset(Renderer renderer, SerializedProperty materialPresetProp)
     {
         if (renderer == null || materialPresetProp == null)
+        {
+            Debug.LogError("应用材质预设失败：渲染器或材质预设属性为空");
             return;
+        }
 
         var materialsProp = materialPresetProp.FindPropertyRelative("materials");
         if (materialsProp.arraySize == 0)
+        {
+            Debug.LogWarning("应用材质预设失败：材质数组为空");
             return;
+        }
 
         // 创建材质数组
         Material[] materials = new Material[materialsProp.arraySize];
+        int validMaterialCount = 0;
+
         for (int i = 0; i < materialsProp.arraySize; i++)
         {
             var matProp = materialsProp.GetArrayElementAtIndex(i);
             if (matProp != null)
             {
                 materials[i] = matProp.objectReferenceValue as Material;
+                if (materials[i] != null)
+                {
+                    validMaterialCount++;
+                }
             }
+        }
+
+        if (validMaterialCount == 0)
+        {
+            Debug.LogWarning("应用材质预设失败：没有有效的材质");
+            return;
         }
 
         // 使用工具类应用材质

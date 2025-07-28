@@ -494,7 +494,17 @@ namespace Yueby.Utils
         /// <param name="materials">材质数组</param>
         public static void ApplyMaterialsToRenderer(Renderer renderer, Material[] materials)
         {
-            if (renderer == null || materials == null) return;
+            if (renderer == null || materials == null)
+            {
+                Debug.LogError("ApplyMaterialsToRenderer: 渲染器或材质数组为空");
+                return;
+            }
+
+            if (renderer.sharedMaterials == null || renderer.sharedMaterials.Length == 0)
+            {
+                Debug.LogWarning($"ApplyMaterialsToRenderer: 渲染器 '{renderer.name}' 没有材质槽位");
+                return;
+            }
 
             // 计算要应用的材质数量
             int materialCount = Mathf.Min(renderer.sharedMaterials.Length, materials.Length);
@@ -504,21 +514,24 @@ namespace Yueby.Utils
             System.Array.Copy(renderer.sharedMaterials, newMaterials, renderer.sharedMaterials.Length);
 
             // 应用预设中的材质
+            int appliedCount = 0;
             for (int i = 0; i < materialCount; i++)
             {
                 if (materials[i] != null)
                 {
                     newMaterials[i] = materials[i];
+                    appliedCount++;
+
                 }
                 else
                 {
-                    Debug.LogWarning($"材质预设 '{materials[i]?.name}' 中索引 {i} 的材质引用丢失");
-                    // 可以选择跳过这个材质或使用默认材质
+                    Debug.LogWarning($"ApplyMaterialsToRenderer: 材质预设中索引 {i} 的材质引用丢失");
                 }
             }
 
             // 设置材质
             renderer.sharedMaterials = newMaterials;
+
         }
 
         /// <summary>

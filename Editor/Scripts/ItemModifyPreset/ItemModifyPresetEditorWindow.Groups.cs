@@ -100,23 +100,8 @@ public partial class ItemModifyPresetEditorWindow
             nameStyle.normal.textColor = EditorGUIUtility.isProSkin ?
                 Color.white : new Color(0.1f, 0.1f, 0.1f);
 
-            var nameRect = new Rect(rect.x + 24, rect.y, rect.width - 70, rect.height);
+            var nameRect = new Rect(rect.x + 24, rect.y, rect.width - 24, rect.height);
             EditorGUI.LabelField(nameRect, groupNameProp.stringValue, nameStyle);
-
-            // 添加应用按钮
-            var buttonStyle = new GUIStyle(GUI.skin.button);
-            buttonStyle.fontSize = 10;
-            buttonStyle.alignment = TextAnchor.MiddleCenter;
-
-            var applyButtonRect = new Rect(rect.x + rect.width - 40, rect.y, 40, rect.height);
-            if (GUI.Button(applyButtonRect, "应用", buttonStyle))
-            {
-                if (uuidProp != null)
-                {
-                    // 应用当前绘制项的分组，而不是当前选中的分组
-                    ApplyPresetGroup(uuidProp.stringValue);
-                }
-            }
 
             return EditorGUIUtility.singleLineHeight + 6; // 增加行高
         };
@@ -124,15 +109,90 @@ public partial class ItemModifyPresetEditorWindow
         // 设置列表选择回调
         _groupsList.OnSelected = (obj, index) =>
         {
-            _selectedGroupIndex = index;
-
-            // 重新创建条目列表
-            if (_selectedGroupIndex >= 0 && _selectedGroupIndex < _presetGroupsProperty.arraySize)
+            // 安全检查：确保索引有效
+            if (index >= 0 && index < _presetGroupsProperty.arraySize)
             {
-                CreateGroupEntriesList();
+                _selectedGroupIndex = index;
+
+                // 重新创建条目列表（仅在需要时）
+                if (_groupEntriesList == null)
+                {
+                    CreateGroupEntriesList();
+                }
+            }
+            else
+            {
+                _selectedGroupIndex = -1;
+                _groupEntriesList = null;
             }
 
             Repaint();
+        };
+
+        // 设置删除回调，用于处理删除后的状态重置
+        _groupsList.OnRemove = (list, obj) =>
+        {
+            // 删除操作完成后，重置选中索引
+            if (_presetGroupsProperty.arraySize == 0)
+            {
+                _selectedGroupIndex = -1;
+                _groupEntriesList = null;
+            }
+            else if (_selectedGroupIndex >= _presetGroupsProperty.arraySize)
+            {
+                // 如果选中的索引超出范围，重置为最后一个有效索引
+                _selectedGroupIndex = _presetGroupsProperty.arraySize - 1;
+                _groupEntriesList = null;
+            }
+
+            Repaint();
+        };
+
+        // 设置鼠标点击回调，用于应用预设分组
+        _groupsList.List.onSelectCallback = (ReorderableList list) =>
+        {
+            // 安全检查：确保索引有效
+            if (list.index >= 0 && list.index < _presetGroupsProperty.arraySize)
+            {
+                var groupElement = _presetGroupsProperty.GetArrayElementAtIndex(list.index);
+                var uuidProp = groupElement.FindPropertyRelative("_uuid");
+                var entriesProp = groupElement.FindPropertyRelative("entries");
+
+                // 检查是否有有效的材质预设条目
+                bool hasValidEntries = false;
+                if (entriesProp.arraySize > 0)
+                {
+                    // 解析引用以获取最新数据
+                    _target.ResolveAllReferences();
+
+                    // 检查每个条目是否有有效的材质预设
+                    for (int i = 0; i < entriesProp.arraySize; i++)
+                    {
+                        var entry = entriesProp.GetArrayElementAtIndex(i);
+                        var entryRendererUuidProp = entry.FindPropertyRelative("_rendererPresetUuid");
+                        var entryMaterialUuidProp = entry.FindPropertyRelative("_materialPresetUuid");
+
+                        // 查找渲染器预设
+                        var entryRendererPreset = _target.FindRendererPreset(entryRendererUuidProp.stringValue);
+                        if (entryRendererPreset != null)
+                        {
+                            // 查找材质预设
+                            var entryMaterialPreset = entryRendererPreset.FindMaterialPreset(entryMaterialUuidProp.stringValue);
+                            if (entryMaterialPreset != null && entryMaterialPreset.materials != null && entryMaterialPreset.materials.Length > 0)
+                            {
+                                hasValidEntries = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (hasValidEntries)
+                {
+                    // 应用预设分组
+                    ApplyPresetGroup(uuidProp.stringValue);
+                }
+            }
         };
 
         // 设置添加回调
@@ -159,7 +219,7 @@ public partial class ItemModifyPresetEditorWindow
 
             // 总是生成新的UUID
             var uuidProp = newGroupProperty.FindPropertyRelative("_uuid");
-            uuidProp.stringValue = System.Guid.NewGuid().ToString();
+            uuidProp.stringValue = GenerateNewUUID();
 
             // 应用修改
             _serializedObject.ApplyModifiedProperties();
@@ -177,8 +237,11 @@ public partial class ItemModifyPresetEditorWindow
                     _selectedGroupIndex = newIndex;
                 }
 
-                // 创建空的条目列表
+                // 创建条目列表
                 CreateGroupEntriesList();
+
+                // 处理复制后的数据：自动递增材质预设索引
+                ProcessCopiedGroupEntries(newIndex);
             }
 
             EditorUtility.SetDirty(_target);
@@ -233,7 +296,32 @@ public partial class ItemModifyPresetEditorWindow
                 return;
             }
 
-            // 应用预设分组 - 现在ApplyPresetGroup内部不再调用ResolveAllReferences
+            // 检查分组是否有有效的条目
+            if (group.entries == null || group.entries.Count == 0)
+            {
+                Debug.LogWarning($"预设分组 '{group.groupName}' 没有条目，无法应用");
+                return;
+            }
+
+            // 检查每个条目是否有有效的材质预设
+            int validEntryCount = 0;
+            foreach (var entry in group.entries)
+            {
+                if (entry.MaterialPreset != null &&
+                    entry.MaterialPreset.materials != null &&
+                    entry.MaterialPreset.materials.Length > 0)
+                {
+                    validEntryCount++;
+                }
+            }
+
+            if (validEntryCount == 0)
+            {
+                Debug.LogWarning($"预设分组 '{group.groupName}' 没有有效的材质预设，无法应用");
+                return;
+            }
+
+            // 应用预设分组
             _target.ApplyPresetGroup(group);
 
             // 应用修改
@@ -241,6 +329,7 @@ public partial class ItemModifyPresetEditorWindow
 
             // 确保对象标记为已修改
             EditorUtility.SetDirty(_target);
+
         }
         catch (System.Exception ex)
         {
@@ -253,6 +342,13 @@ public partial class ItemModifyPresetEditorWindow
     {
         GUILayout.BeginArea(rect);
         EditorGUILayout.BeginVertical();
+
+        // 安全检查：确保选中的索引有效
+        if (_selectedGroupIndex >= _presetGroupsProperty.arraySize)
+        {
+            _selectedGroupIndex = -1;
+            _groupEntriesList = null;
+        }
 
         if (_selectedGroupIndex >= 0 && _selectedGroupIndex < _presetGroupsProperty.arraySize)
         {
@@ -313,7 +409,7 @@ public partial class ItemModifyPresetEditorWindow
             // 添加重置UUID按钮
             if (GUILayout.Button("重置", GUILayout.Width(50)))
             {
-                uuidProp.stringValue = System.Guid.NewGuid().ToString();
+                uuidProp.stringValue = GenerateNewUUID();
                 _serializedObject.ApplyModifiedProperties();
                 EditorUtility.SetDirty(_target);
             }
@@ -351,6 +447,13 @@ public partial class ItemModifyPresetEditorWindow
     // 创建分组条目列表
     private void CreateGroupEntriesList()
     {
+        // 安全检查：确保选中的索引有效
+        if (_selectedGroupIndex >= _presetGroupsProperty.arraySize)
+        {
+            _selectedGroupIndex = -1;
+            return;
+        }
+
         if (_selectedGroupIndex < 0 || _selectedGroupIndex >= _presetGroupsProperty.arraySize)
             return;
 
@@ -371,8 +474,11 @@ public partial class ItemModifyPresetEditorWindow
         // 设置列表标题
         _groupEntriesList.Title = "预设条目";
 
-        // 禁用自动增加数组大小，改为手动管理
-        _groupEntriesList.AutoIncreaseArraySize = false;
+        // 启用自动增加数组大小，允许删除功能
+        _groupEntriesList.AutoIncreaseArraySize = true;
+
+        // 确保删除按钮可见
+        _groupEntriesList.List.displayRemove = true;
 
         // 如果有项目，默认选择第一个
         if (entriesProperty.arraySize > 0)
@@ -409,33 +515,12 @@ public partial class ItemModifyPresetEditorWindow
                 }
             }
 
-            // 创建材质预设选项
-            List<string> materialOptions = new List<string>();
-            List<ItemModifyPreset.MaterialPreset> materialPresets = new List<ItemModifyPreset.MaterialPreset>();
-            int selectedMaterialIndex = -1;
-            Color materialColor = Color.white; // 默认颜色
-
             // 查找当前选中的渲染器预设
             var rendererPreset = _target.FindRendererPreset(rendererUuidProp.stringValue);
-            if (rendererPreset != null)
-            {
-                for (int i = 0; i < rendererPreset.materialPresets.Count; i++)
-                {
-                    var preset = rendererPreset.materialPresets[i];
-                    if (preset != null)
-                    {
-                        materialOptions.Add(preset.presetName);
-                        materialPresets.Add(preset);
 
-                        if (preset.UUID == materialUuidProp.stringValue)
-                        {
-                            selectedMaterialIndex = materialOptions.Count - 1;
-                            // 直接使用MaterialPreset的themeColor，而不是从材质推导
-                            materialColor = preset.themeColor;
-                        }
-                    }
-                }
-            }
+            // 使用辅助方法创建材质预设选项
+            var (materialOptions, materialPresets, selectedMaterialIndex, materialColor) =
+                CreateMaterialPresetOptions(rendererPreset, materialUuidProp.stringValue);
 
             // 绘制索引编号
             var indexStyle = new GUIStyle(EditorStyles.miniLabel);
@@ -467,10 +552,8 @@ public partial class ItemModifyPresetEditorWindow
                     materialUuidProp.stringValue = "";
                 }
 
-                // 应用修改
-                _serializedObject.ApplyModifiedProperties();
-
-                // 更新主题色
+                // 应用修改并更新主题色
+                ApplySerializedObjectChanges();
                 UpdateGroupThemeColor(_selectedGroupIndex);
             }
 
@@ -493,19 +576,8 @@ public partial class ItemModifyPresetEditorWindow
 
                     if (shouldSyncAll)
                     {
-                        // 获取当前选中的材质预设名称
-                        string selectedPresetName = materialPresets[newMaterialIndex].presetName;
-
-                        // 从预设名称中提取颜色名称
-                        string colorName = MaterialUtility.ExtractColorNameFromPreset(selectedPresetName);
-
-                        // 如果找到颜色名称，更新分组名称
-                        if (!string.IsNullOrEmpty(colorName))
-                        {
-                            var groupElement = _presetGroupsProperty.GetArrayElementAtIndex(_selectedGroupIndex);
-                            var groupNameProp = groupElement.FindPropertyRelative("groupName");
-                            groupNameProp.stringValue = colorName;
-                        }
+                        // 更新分组名称
+                        UpdateGroupNameFromFirstEntry(_selectedGroupIndex);
 
                         // 遍历所有其他条目
                         for (int i = 1; i < entriesProperty.arraySize; i++)
@@ -529,10 +601,8 @@ public partial class ItemModifyPresetEditorWindow
                     }
                 }
 
-                // 应用修改
-                _serializedObject.ApplyModifiedProperties();
-
-                // 更新主题色
+                // 应用修改并更新主题色
+                ApplySerializedObjectChanges();
                 UpdateGroupThemeColor(_selectedGroupIndex);
             }
 
@@ -548,6 +618,8 @@ public partial class ItemModifyPresetEditorWindow
         // 设置列表选择回调
         _groupEntriesList.OnSelected = (obj, index) =>
         {
+            // 更新主题色（当条目被删除后，选择回调会被触发）
+            UpdateGroupThemeColor(_selectedGroupIndex);
             Repaint();
         };
 
@@ -598,6 +670,12 @@ public partial class ItemModifyPresetEditorWindow
                             break;
                         }
                     }
+
+                    // 如果所有渲染器都被使用了，选择下一个渲染器（循环选择）
+                    if (usedRendererUuids.Count >= _target.rendererPresets.Count)
+                    {
+                        rendererIndex = (group.entries.Count) % _target.rendererPresets.Count;
+                    }
                 }
             }
 
@@ -608,7 +686,7 @@ public partial class ItemModifyPresetEditorWindow
                 return;
             }
 
-            // 查找上一个条目使用的材质预设索引
+            // 智能选择材质预设索引：从上一个预设的材质索引开始，每次+1
             int materialPresetIndex = 0;
 
             if (entriesProperty.arraySize > 0)
@@ -622,74 +700,89 @@ public partial class ItemModifyPresetEditorWindow
                 var lastRendererPreset = _target.FindRendererPreset(lastRendererUuid);
                 if (lastRendererPreset != null)
                 {
-                    // 查找上一个材质预设在其渲染器预设中的索引
-                    for (int i = 0; i < lastRendererPreset.materialPresets.Count; i++)
+                    // 使用辅助方法查找材质预设索引
+                    int lastMaterialIndex = FindMaterialPresetIndex(lastRendererPreset, lastMaterialUuid);
+
+                    // 尝试使用下一个索引
+                    int nextIndex = lastMaterialIndex + 1;
+                    if (nextIndex < selectedRendererPreset.materialPresets.Count)
                     {
-                        if (lastRendererPreset.materialPresets[i].UUID == lastMaterialUuid)
-                        {
-                            // 找到索引，检查新渲染器是否有足够的材质预设
-                            if (i < selectedRendererPreset.materialPresets.Count)
-                            {
-                                materialPresetIndex = i;
-                            }
-                            break;
-                        }
+                        materialPresetIndex = nextIndex;
+                    }
+                    else
+                    {
+                        // 如果下一个索引超出范围，回到0号位
+                        materialPresetIndex = 0;
                     }
                 }
+            }
+            else
+            {
+                // 如果是第一个条目，从0号位开始
+                materialPresetIndex = 0;
             }
 
             // 获取选择的材质预设
             var firstMaterialPreset = selectedRendererPreset.materialPresets[materialPresetIndex];
 
-            // 检查是否已存在相同渲染器的条目
-            bool foundExisting = false;
-            string rendererUuid = selectedRendererPreset.UUID;
+            // 总是添加新条目，不检查是否已存在
+            int newIndex = entriesProperty.arraySize;
+            entriesProperty.arraySize++;
 
-            for (int i = 0; i < entriesProperty.arraySize; i++)
+            var newEntryProp = entriesProperty.GetArrayElementAtIndex(newIndex);
+            newEntryProp.FindPropertyRelative("_rendererPresetUuid").stringValue = selectedRendererPreset.UUID;
+            newEntryProp.FindPropertyRelative("_materialPresetUuid").stringValue = firstMaterialPreset.UUID;
+
+            // 自动同步所有条目的材质预设索引
+            if (entriesProperty.arraySize > 1)
             {
-                var entryProp = entriesProperty.GetArrayElementAtIndex(i);
-                var rendererUuidProp = entryProp.FindPropertyRelative("_rendererPresetUuid");
+                // 获取第一个条目的材质预设索引作为基准
+                var firstEntry = entriesProperty.GetArrayElementAtIndex(0);
+                var firstRendererUuid = firstEntry.FindPropertyRelative("_rendererPresetUuid").stringValue;
+                var firstMaterialUuid = firstEntry.FindPropertyRelative("_materialPresetUuid").stringValue;
 
-                if (rendererUuidProp.stringValue == rendererUuid)
+                var firstRendererPreset = _target.FindRendererPreset(firstRendererUuid);
+                if (firstRendererPreset != null)
                 {
-                    // 更新现有条目
-                    var materialUuidProp = entryProp.FindPropertyRelative("_materialPresetUuid");
-                    materialUuidProp.stringValue = firstMaterialPreset.UUID;
-                    foundExisting = true;
-                    break;
+                    // 使用辅助方法找到第一个条目的材质预设索引
+                    int baseMaterialIndex = FindMaterialPresetIndex(firstRendererPreset, firstMaterialUuid);
+
+                    // 同步所有其他条目的材质预设索引
+                    for (int i = 1; i < entriesProperty.arraySize; i++)
+                    {
+                        var entryProp = entriesProperty.GetArrayElementAtIndex(i);
+                        var rendererUuidProp = entryProp.FindPropertyRelative("_rendererPresetUuid");
+                        var materialUuidProp = entryProp.FindPropertyRelative("_materialPresetUuid");
+
+                        var rendererPreset = _target.FindRendererPreset(rendererUuidProp.stringValue);
+                        if (rendererPreset != null && baseMaterialIndex < rendererPreset.materialPresets.Count)
+                        {
+                            materialUuidProp.stringValue = rendererPreset.materialPresets[baseMaterialIndex].UUID;
+                        }
+                    }
                 }
             }
 
-            // 如果没有找到现有条目，添加新条目
-            if (!foundExisting)
-            {
-                int newIndex = entriesProperty.arraySize;
-                entriesProperty.arraySize++;
-
-                var newEntryProp = entriesProperty.GetArrayElementAtIndex(newIndex);
-                newEntryProp.FindPropertyRelative("_rendererPresetUuid").stringValue = selectedRendererPreset.UUID;
-                newEntryProp.FindPropertyRelative("_materialPresetUuid").stringValue = firstMaterialPreset.UUID;
-            }
-
-            // 应用修改
-            _serializedObject.ApplyModifiedProperties();
-
-            // 更新序列化对象
-            _serializedObject.UpdateIfRequiredOrScript();
+            // 应用修改并更新UI
+            ApplySerializedObjectChanges();
 
             // 选择新添加的条目
-            if (list != null && !foundExisting)
+            if (list != null)
             {
-                int newIndex = entriesProperty.arraySize - 1;
-                list.index = newIndex;
+                int newEntryIndex = entriesProperty.arraySize - 1;
+                list.index = newEntryIndex;
             }
 
             // 更新主题色
             UpdateGroupThemeColor(_selectedGroupIndex);
-
-            EditorUtility.SetDirty(_target);
-            Repaint();
         };
+
+    }
+
+    // 应用序列化对象修改并更新UI
+    private void ApplySerializedObjectChanges()
+    {
+        ApplySerializedObjectChanges(_serializedObject, _target, Repaint);
     }
 
     // 更新分组主题色
@@ -726,29 +819,87 @@ public partial class ItemModifyPresetEditorWindow
             }
         }
 
-        // 应用修改
-        _serializedObject.ApplyModifiedProperties();
-
-        // 标记为已修改
-        EditorUtility.SetDirty(_target);
+        // 应用修改并更新UI
+        ApplySerializedObjectChanges();
     }
 
-    // 计算多个颜色的平均值
-    private Color CalculateAverageColor(List<Color> colors)
+    // 更新分组名称（基于第一个条目的材质预设）
+    private void UpdateGroupNameFromFirstEntry(int groupIndex)
     {
-        if (colors == null || colors.Count == 0)
-            return new Color(0.4f, 0.7f, 0.3f, 1f); // 默认绿色
+        if (groupIndex < 0 || groupIndex >= _presetGroupsProperty.arraySize)
+            return;
 
-        float r = 0, g = 0, b = 0, a = 0;
-        foreach (var color in colors)
+        var groupElement = _presetGroupsProperty.GetArrayElementAtIndex(groupIndex);
+        var entriesProperty = groupElement.FindPropertyRelative("entries");
+
+        if (entriesProperty.arraySize > 0)
         {
-            r += color.r;
-            g += color.g;
-            b += color.b;
-            a += color.a;
+            var firstEntry = entriesProperty.GetArrayElementAtIndex(0);
+            var firstRendererUuid = firstEntry.FindPropertyRelative("_rendererPresetUuid").stringValue;
+            var firstMaterialUuid = firstEntry.FindPropertyRelative("_materialPresetUuid").stringValue;
+
+            var firstRendererPreset = _target.FindRendererPreset(firstRendererUuid);
+            if (firstRendererPreset != null)
+            {
+                var firstMaterialPreset = firstRendererPreset.FindMaterialPreset(firstMaterialUuid);
+                if (firstMaterialPreset != null)
+                {
+                    // 从预设名称中提取颜色名称
+                    string colorName = MaterialUtility.ExtractColorNameFromPreset(firstMaterialPreset.presetName);
+
+                    // 如果找到颜色名称，更新分组名称
+                    if (!string.IsNullOrEmpty(colorName))
+                    {
+                        var groupNameProp = groupElement.FindPropertyRelative("groupName");
+                        groupNameProp.stringValue = colorName;
+                    }
+                }
+            }
+        }
+    }
+
+    // 处理复制后的分组条目：自动递增材质预设索引
+    private void ProcessCopiedGroupEntries(int groupIndex)
+    {
+        if (groupIndex < 0 || groupIndex >= _presetGroupsProperty.arraySize)
+            return;
+
+        var groupElement = _presetGroupsProperty.GetArrayElementAtIndex(groupIndex);
+        var entriesProperty = groupElement.FindPropertyRelative("entries");
+
+        // 遍历所有条目，递增材质预设索引
+        for (int i = 0; i < entriesProperty.arraySize; i++)
+        {
+            var entry = entriesProperty.GetArrayElementAtIndex(i);
+            var rendererUuidProp = entry.FindPropertyRelative("_rendererPresetUuid");
+            var materialUuidProp = entry.FindPropertyRelative("_materialPresetUuid");
+
+            // 查找渲染器预设
+            var rendererPreset = _target.FindRendererPreset(rendererUuidProp.stringValue);
+            if (rendererPreset != null && rendererPreset.materialPresets.Count > 0)
+            {
+                // 查找当前材质预设索引
+                int currentIndex = FindMaterialPresetIndex(rendererPreset, materialUuidProp.stringValue);
+
+                // 计算下一个索引，如果已经是最后一个，则不再递增
+                int nextIndex = currentIndex + 1;
+                if (nextIndex < rendererPreset.materialPresets.Count)
+                {
+                    // 更新材质预设UUID
+                    materialUuidProp.stringValue = rendererPreset.materialPresets[nextIndex].UUID;
+                }
+                // 如果已经是最后一个索引，保持当前索引不变
+            }
         }
 
-        return new Color(r / colors.Count, g / colors.Count, b / colors.Count, a / colors.Count);
+        // 更新分组名称（基于第一个条目的材质预设）
+        UpdateGroupNameFromFirstEntry(groupIndex);
+
+        // 应用修改
+        ApplySerializedObjectChanges();
+
+        // 更新主题色
+        UpdateGroupThemeColor(groupIndex);
     }
 
     // 计算两个颜色之间的差异（欧几里得距离）
