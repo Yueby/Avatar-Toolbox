@@ -14,7 +14,7 @@ using Yueby.Utils;
 
 namespace YuebyAvatarTools.PhysBoneTransfer.Editor
 {
-    public class PhysboneTransfer : EditorWindow
+    public class PhysBoneTransfer : EditorWindow
     {
         private class TransferStats
         {
@@ -229,7 +229,7 @@ namespace YuebyAvatarTools.PhysBoneTransfer.Editor
         [MenuItem("Tools/YuebyTools/VRChat/Avatar/PhysBone Transfer", false, 21)]
         public static void OpenWindow()
         {
-            var window = CreateWindow<PhysboneTransfer>();
+            var window = CreateWindow<PhysBoneTransfer>();
             window.titleContent = new GUIContent("Avatar Component Transfer");
             window.minSize = new Vector2(200, 250);
             window.Show();
