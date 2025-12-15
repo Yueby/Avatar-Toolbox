@@ -37,12 +37,26 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
             {
                 YuebyLogger.LogInfo("PhysBoneTransferPlugin", "开始转移PhysBone组件");
                 success &= TransferPhysBones();
+                
+                // 如果用户停止了，立即返回
+                if (ShouldStopTransfer())
+                {
+                    YuebyLogger.LogWarning("PhysBoneTransferPlugin", "用户已停止转移");
+                    return false;
+                }
             }
 
             if (_transferPhysBoneCollider)
             {
                 YuebyLogger.LogInfo("PhysBoneTransferPlugin", "开始转移PhysBone碰撞器");
                 success &= TransferPhysBoneColliders();
+                
+                // 如果用户停止了，立即返回
+                if (ShouldStopTransfer())
+                {
+                    YuebyLogger.LogWarning("PhysBoneTransferPlugin", "用户已停止转移");
+                    return false;
+                }
             }
 
             YuebyLogger.LogInfo("PhysBoneTransferPlugin", $"PhysBone转移完成，结果: {(success ? "成功" : "部分失败")}");
@@ -68,6 +82,13 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
 
             foreach (Transform sourceTransform in allTransforms)
             {
+                // 检查是否应该停止
+                if (ShouldStopTransfer())
+                {
+                    YuebyLogger.LogWarning("PhysBoneTransferPlugin", "转移已被用户停止");
+                    return false;
+                }
+                
                 var physBone = sourceTransform.GetComponent<VRCPhysBone>();
                 if (physBone == null) continue;
 
@@ -127,6 +148,13 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
 
             foreach (Transform sourceTransform in allTransforms)
             {
+                // 检查是否应该停止
+                if (ShouldStopTransfer())
+                {
+                    YuebyLogger.LogWarning("PhysBoneTransferPlugin", "转移已被用户停止");
+                    return false;
+                }
+                
                 var collider = sourceTransform.GetComponent<VRCPhysBoneColliderBase>();
                 if (collider == null) continue;
 

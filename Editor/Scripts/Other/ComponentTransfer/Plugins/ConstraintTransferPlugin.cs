@@ -29,6 +29,13 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
 
             foreach (Transform sourceTransform in allTransforms)
             {
+                // 检查是否应该停止
+                if (ShouldStopTransfer())
+                {
+                    YuebyLogger.LogWarning("ConstraintTransferPlugin", "转移已被用户停止");
+                    return false;
+                }
+
                 try
                 {
                     if (HasAnyConstraint(sourceTransform))
@@ -71,24 +78,33 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
             bool success = true;
 
             var targetGo = GetOrCreateTargetObject(sourceTransform, TargetRoot);
-            if (targetGo == null) return false;
+            if (targetGo == null)
+            {
+                return false;
+            }
 
             // 转移 ParentConstraint
             if (sourceTransform.GetComponent<ParentConstraint>() != null)
             {
                 success &= TransferConstraint<ParentConstraint>(sourceTransform.gameObject, targetGo);
+                if (ShouldStopTransfer())
+                    return false;
             }
 
             // 转移 RotationConstraint
             if (sourceTransform.GetComponent<RotationConstraint>() != null)
             {
                 success &= TransferConstraint<RotationConstraint>(sourceTransform.gameObject, targetGo);
+                if (ShouldStopTransfer())
+                    return false;
             }
 
             // 转移 PositionConstraint
             if (sourceTransform.GetComponent<PositionConstraint>() != null)
             {
                 success &= TransferConstraint<PositionConstraint>(sourceTransform.gameObject, targetGo);
+                if (ShouldStopTransfer())
+                    return false;
             }
 
             return success;
@@ -119,14 +135,12 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
                 constraint.constraintActive = lastActive;
 
                 // 处理约束源
-                bool allSourcesFound = true;
                 for (var i = 0; i < constraint.sourceCount; i++)
                 {
                     var source = constraint.GetSource(i);
                     var targetSourceObject = GetOrCreateTargetObject(source.sourceTransform, TargetRoot);
                     if (targetSourceObject == null)
                     {
-                        allSourcesFound = false;
                         continue;
                     }
 

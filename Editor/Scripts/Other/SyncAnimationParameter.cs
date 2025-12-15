@@ -34,8 +34,8 @@ namespace Yueby.AvatarTools.Other
         // private readonly Dictionary<string, float> _clipPropertiesDic = new Dictionary<string, float>();
         // private readonly Dictionary<string, float> _meshBlendShapesDefaultDic = new Dictionary<string, float>();
 
-        private SkinnedMeshRenderer _applyMeshRenderer;
-        private SkinnedMeshRenderer _dataMeshRenderer;
+        private SkinnedMeshRenderer _targetMeshRenderer;
+        private SkinnedMeshRenderer _sourceMeshRenderer;
         private Vector2 _pos, _pos1;
 
         private AnimationBlendShapeHelper _clipAnimationBsHelper;
@@ -110,7 +110,7 @@ namespace Yueby.AvatarTools.Other
                         _animationClip = (AnimationClip)EditorUI.ObjectField("动画片段：", 50, _animationClip, typeof(AnimationClip), true);
                         break;
                     case SyncType.Mesh:
-                        _dataMeshRenderer = (SkinnedMeshRenderer)EditorUI.ObjectField("数据网格：", 50, _dataMeshRenderer, typeof(SkinnedMeshRenderer), true);
+                        _sourceMeshRenderer = (SkinnedMeshRenderer)EditorUI.ObjectField("源网格：", 50, _sourceMeshRenderer, typeof(SkinnedMeshRenderer), true);
                         break;
                 }
 
@@ -121,14 +121,14 @@ namespace Yueby.AvatarTools.Other
                     GetAnimationInfo();
 
                 EditorGUI.BeginChangeCheck();
-                _applyMeshRenderer = (SkinnedMeshRenderer)EditorUI.ObjectField("应用网格：", 50, _applyMeshRenderer, typeof(SkinnedMeshRenderer), true);
+                _targetMeshRenderer = (SkinnedMeshRenderer)EditorUI.ObjectField("目标网格：", 50, _targetMeshRenderer, typeof(SkinnedMeshRenderer), true);
                 if (EditorGUI.EndChangeCheck())
                     GetMeshInfo();
-                if (_defaultAnimationBsHelper == null || _defaultAnimationBsHelper.Parameters.Count == 0 && _applyMeshRenderer != null)
+                if (_defaultAnimationBsHelper == null || _defaultAnimationBsHelper.Parameters.Count == 0 && _targetMeshRenderer != null)
                     GetMeshInfo();
             });
 
-            if (_animationClip != null || _dataMeshRenderer != null)
+            if (_animationClip != null || _sourceMeshRenderer != null)
             {
                 _bsRL.DoLayout("动画片段内参数", new Vector2(-1, 400));
             }
@@ -203,15 +203,15 @@ namespace Yueby.AvatarTools.Other
                     }
                     break;
                 case SyncType.Mesh:
-                    if (_dataMeshRenderer == null) return;
+                    if (_sourceMeshRenderer == null) return;
 
                     _clipAnimationBsHelper.Parameters.Clear();
-                    for (var i = 0; i < _dataMeshRenderer.sharedMesh.blendShapeCount; i++)
+                    for (var i = 0; i < _sourceMeshRenderer.sharedMesh.blendShapeCount; i++)
                     {
                         _clipAnimationBsHelper.Parameters.Add(new AnimationBlendShapeHelper.Parameter
                         {
-                            Name = _dataMeshRenderer.sharedMesh.GetBlendShapeName(i),
-                            Value = _dataMeshRenderer.GetBlendShapeWeight(i)
+                            Name = _sourceMeshRenderer.sharedMesh.GetBlendShapeName(i),
+                            Value = _sourceMeshRenderer.GetBlendShapeWeight(i)
                         });
                     }
 
@@ -227,13 +227,13 @@ namespace Yueby.AvatarTools.Other
 
         private void GetMeshInfo()
         {
-            if (_applyMeshRenderer == null) return;
+            if (_targetMeshRenderer == null) return;
             _defaultAnimationBsHelper.Parameters.Clear();
 
-            for (var i = 0; i < _applyMeshRenderer.sharedMesh.blendShapeCount; i++)
+            for (var i = 0; i < _targetMeshRenderer.sharedMesh.blendShapeCount; i++)
             {
-                var blendShapeName = _applyMeshRenderer.sharedMesh.GetBlendShapeName(i);
-                var value = _applyMeshRenderer.GetBlendShapeWeight(i);
+                var blendShapeName = _targetMeshRenderer.sharedMesh.GetBlendShapeName(i);
+                var value = _targetMeshRenderer.GetBlendShapeWeight(i);
 
                 _defaultAnimationBsHelper.Parameters.Add(new AnimationBlendShapeHelper.Parameter
                 {
@@ -247,41 +247,32 @@ namespace Yueby.AvatarTools.Other
 
         private void ApplyToMesh()
         {
-            if (_applyMeshRenderer == null) return;
-            if (_animationClip == null && _dataMeshRenderer == null) return;
-            Undo.RegisterCompleteObjectUndo(_applyMeshRenderer, "Apply BlendShapes");
-
+            if (_targetMeshRenderer == null) return;
+            if (_animationClip == null && _sourceMeshRenderer == null) return;
+            Undo.RegisterCompleteObjectUndo(_targetMeshRenderer, "Apply BlendShapes");
             switch (_applyType)
             {
                 case ApplyType.Override:
+                    // for (var i = 0; i < _meshRenderer.sharedMesh.blendShapeCount; i++)
+                    // {
+                    //     var blendShapeName = _meshRenderer.sharedMesh.GetBlendShapeName(i);
+                    //     var index = _meshRenderer.sharedMesh.GetBlendShapeIndex(blendShapeName);
+
+                    //     _meshRenderer.SetBlendShapeWeight(index, 0);
+                    // }
+
                     foreach (var parameter in _clipAnimationBsHelper.Parameters)
                     {
-                        // 检查应用网格中是否存在该形态键
-                        var applyIndex = _applyMeshRenderer.sharedMesh.GetBlendShapeIndex(parameter.Name);
-                        if (applyIndex >= 0)
-                        {
-                            _applyMeshRenderer.SetBlendShapeWeight(applyIndex, parameter.Value);
-                        }
-                        else
-                        {
-                            Debug.LogWarning($"应用网格中未找到形态键: {parameter.Name}");
-                        }
+                        var index = _targetMeshRenderer.sharedMesh.GetBlendShapeIndex(parameter.Name);
+                        _targetMeshRenderer.SetBlendShapeWeight(index, parameter.Value);
                     }
                     break;
                 case ApplyType.Additive:
                     foreach (var parameter in _clipAnimationBsHelper.Parameters)
                     {
-                        // 检查应用网格中是否存在该形态键
-                        var applyIndex = _applyMeshRenderer.sharedMesh.GetBlendShapeIndex(parameter.Name);
-                        if (applyIndex >= 0)
-                        {
-                            var defaultParam = _defaultAnimationBsHelper.Parameters.FirstOrDefault(x => x.Name == parameter.Name);
-                            _applyMeshRenderer.SetBlendShapeWeight(applyIndex, defaultParam?.Value + parameter.Value ?? parameter.Value);
-                        }
-                        else
-                        {
-                            Debug.LogWarning($"应用网格中未找到形态键: {parameter.Name}");
-                        }
+                        var index = _targetMeshRenderer.sharedMesh.GetBlendShapeIndex(parameter.Name);
+                        var defaultParam = _defaultAnimationBsHelper.Parameters.FirstOrDefault(x => x.Name == parameter.Name);
+                        _targetMeshRenderer.SetBlendShapeWeight(index, defaultParam.Value + parameter.Value);
                     }
                     break;
             }
@@ -289,15 +280,12 @@ namespace Yueby.AvatarTools.Other
 
         private void ResetToDefault()
         {
-            if (_applyMeshRenderer == null || _animationClip == null) return;
+            if (_targetMeshRenderer == null || _animationClip == null) return;
 
             foreach (var parameter in _defaultAnimationBsHelper.Parameters)
             {
-                var index = _applyMeshRenderer.sharedMesh.GetBlendShapeIndex(parameter.Name);
-                if (index >= 0)
-                {
-                    _applyMeshRenderer.SetBlendShapeWeight(index, parameter.Value);
-                }
+                var index = _targetMeshRenderer.sharedMesh.GetBlendShapeIndex(parameter.Name);
+                _targetMeshRenderer.SetBlendShapeWeight(index, parameter.Value);
             }
         }
     }

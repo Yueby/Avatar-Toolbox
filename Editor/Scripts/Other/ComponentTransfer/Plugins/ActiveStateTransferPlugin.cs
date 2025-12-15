@@ -33,6 +33,13 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
 
             foreach (var sourceTransform in sourceTransforms)
             {
+                // 检查是否应该停止
+                if (ShouldStopTransfer())
+                {
+                    YuebyLogger.LogWarning("ActiveStateTransferPlugin", "转移已被用户停止");
+                    return false;
+                }
+                
                 totalObjects++;
                 try
                 {

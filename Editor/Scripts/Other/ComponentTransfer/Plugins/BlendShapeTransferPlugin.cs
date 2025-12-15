@@ -30,6 +30,13 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
 
             foreach (var sourceRenderer in sourceSkinnedMeshRenderers)
             {
+                // 检查是否应该停止
+                if (ShouldStopTransfer())
+                {
+                    YuebyLogger.LogWarning("BlendShapeTransferPlugin", "转移已被用户停止");
+                    return false;
+                }
+                
                 try
                 {
                     var targetGo = GetOrCreateTargetObject(sourceRenderer.transform, TargetRoot);

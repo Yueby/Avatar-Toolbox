@@ -30,6 +30,13 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
 
             foreach (var sourceAnimator in sourceAnimators)
             {
+                // 检查是否应该停止
+                if (ShouldStopTransfer())
+                {
+                    YuebyLogger.LogWarning("AnimatorTransferPlugin", "转移已被用户停止");
+                    return false;
+                }
+                
                 try
                 {
                     var targetGo = GetOrCreateTargetObject(sourceAnimator.transform, TargetRoot);

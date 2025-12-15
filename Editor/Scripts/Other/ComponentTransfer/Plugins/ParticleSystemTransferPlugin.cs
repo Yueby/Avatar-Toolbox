@@ -28,6 +28,13 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
 
             foreach (Transform sourceTransform in allTransforms)
             {
+                // 检查是否应该停止
+                if (ShouldStopTransfer())
+                {
+                    YuebyLogger.LogWarning("ParticleSystemTransferPlugin", "转移已被用户停止");
+                    return false;
+                }
+                
                 try
                 {
                     if (HasParticleSystem(sourceTransform))

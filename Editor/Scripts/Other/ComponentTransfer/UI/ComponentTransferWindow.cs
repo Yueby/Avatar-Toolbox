@@ -218,8 +218,23 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
                 return;
             }
 
+            // 清空跨目标决策缓存（开始新的转移任务）
+            ComponentTransferBase.ClearCrossTargetDecisions();
+            YuebyLogger.LogInfo("ComponentTransfer", "已清空跨目标决策缓存，开始新的转移任务");
+
+            // 重置所有插件的停止标志和全局窗口标志
+            foreach (var plugin in enabledPlugins)
+            {
+                if (plugin is ComponentTransferBase basePlugin)
+                {
+                    basePlugin.ResetStopFlag();
+                }
+            }
+            BoneMappingRecommendationWindow.ResetGlobalStopFlag();
+
             bool overallSuccess = true;
             int processedTargets = 0;
+            bool userStopped = false;
 
             foreach (var target in targets)
             {
@@ -230,11 +245,28 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
 
                 foreach (var plugin in enabledPlugins)
                 {
+                    // 检查是否应该停止（支持ComponentTransferBase的插件）
+                    if (plugin is ComponentTransferBase basePlugin && basePlugin.ShouldStopTransfer())
+                    {
+                        YuebyLogger.LogWarning("ComponentTransfer", "用户已停止转移流程");
+                        userStopped = true;
+                        break;
+                    }
+                    
                     if (plugin.CanTransfer(_sourceRoot, target.transform))
                     {
                         try
                         {
                             bool success = plugin.ExecuteTransfer(_sourceRoot, target.transform);
+                            
+                            // 执行后再次检查停止标志
+                            if (plugin is ComponentTransferBase basePlugin2 && basePlugin2.ShouldStopTransfer())
+                            {
+                                YuebyLogger.LogWarning("ComponentTransfer", "用户已停止转移流程");
+                                userStopped = true;
+                                break;
+                            }
+                            
                             if (!success)
                             {
                                 YuebyLogger.LogWarning("ComponentTransfer", $"插件 {plugin.Name} 转移失败");
@@ -256,21 +288,32 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
                         YuebyLogger.LogInfo("ComponentTransfer", $"插件 {plugin.Name} 跳过 (无可转移内容)");
                     }
                 }
+                
+                // 如果用户停止了，跳出外层循环
+                if (userStopped)
+                    break;
             }
 
             if (processedTargets > 0)
             {
-                var message = overallSuccess ? "转移完成" : "转移过程中发生了一些错误";
-                EditorUtility.DisplayDialog("转移结果", message, "确定");
-
-                if (overallSuccess)
+                string message;
+                if (userStopped)
                 {
+                    message = "转移已被用户停止";
+                    YuebyLogger.LogWarning("ComponentTransfer", "转移操作已被用户停止");
+                }
+                else if (overallSuccess)
+                {
+                    message = "转移完成";
                     YuebyLogger.LogInfo("ComponentTransfer", "所有转移操作完成");
                 }
                 else
                 {
+                    message = "转移过程中发生了一些错误";
                     YuebyLogger.LogWarning("ComponentTransfer", "转移操作完成，但存在一些错误");
                 }
+                
+                EditorUtility.DisplayDialog("转移结果", message, "确定");
             }
         }
     }
