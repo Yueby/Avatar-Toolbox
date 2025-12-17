@@ -93,17 +93,11 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
                         if (sourceTransform.TryGetComponent<ParticleSystemRenderer>(out var renderer))
                         {
                             var rendererComponent = CopyComponentWithUndo<ParticleSystemRenderer>(sourceTransform.gameObject, targetGo);
-                            if (rendererComponent != null)
-                            {
-                                YuebyLogger.LogInfo("ParticleSystemTransferPlugin", $"转移ParticleSystemRenderer组件: {sourceTransform.name}");
-                            }
-                            else
+                            if (rendererComponent == null)
                             {
                                 YuebyLogger.LogError("ParticleSystemTransferPlugin", $"复制渲染器组件失败: {sourceTransform.name}");
                             }
                         }
-
-                        YuebyLogger.LogInfo("ParticleSystemTransferPlugin", $"转移ParticleSystem组件: {sourceTransform.name}");
                     }
                     else
                     {
@@ -131,17 +125,11 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
                         if (childPS.TryGetComponent<ParticleSystemRenderer>(out var childRenderer))
                         {
                             var childRendererComponent = CopyComponentWithUndo<ParticleSystemRenderer>(childPS.gameObject, childTargetGo);
-                            if (childRendererComponent != null)
-                            {
-                                YuebyLogger.LogInfo("ParticleSystemTransferPlugin", $"转移子ParticleSystemRenderer组件: {childPS.name}");
-                            }
-                            else
+                            if (childRendererComponent == null)
                             {
                                 YuebyLogger.LogError("ParticleSystemTransferPlugin", $"复制子渲染器组件失败: {childPS.name}");
                             }
                         }
-
-                        YuebyLogger.LogInfo("ParticleSystemTransferPlugin", $"转移子ParticleSystem组件: {childPS.name}");
                     }
                     else
                     {

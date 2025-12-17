@@ -58,8 +58,6 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
                     var materials = originRenderer.sharedMaterials;
                     targetRenderer.sharedMaterials = materials;
                     UnityEditor.Undo.RegisterFullObjectHierarchyUndo(targetGo, "TransferMaterial");
-
-                    YuebyLogger.LogInfo("MaterialTransferPlugin", $"转移材质: {originRenderer.name}");
                 }
                 catch (System.Exception e)
                 {

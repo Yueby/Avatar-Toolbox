@@ -25,12 +25,28 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
         {
             { "left", new[] { "left", "l", "_l", ".l", "_left", "left_" } },
             { "right", new[] { "right", "r", "_r", ".r", "_right", "right_" } },
+            
+            // 手部和手臂
+            { "shoulder", new[] { "shoulder", "clavicle", "collar" } },
+            { "upperarm", new[] { "upperarm", "upper_arm", "uparm", "arm" } },
+            { "lowerarm", new[] { "lowerarm", "lower_arm", "lowarm", "forearm", "elbow" } },
             { "hand", new[] { "hand", "wrist", "palm" } },
-            { "foot", new[] { "foot", "ankle", "toe" } },
-            { "arm", new[] { "arm", "upperarm", "lowerarm", "elbow" } },
-            { "leg", new[] { "leg", "upperleg", "lowerleg", "thigh", "calf", "knee" } },
+            { "finger", new[] { "finger", "thumb", "index", "middle", "ring", "pinky" } },
+            
+            // 腿部
+            { "upperleg", new[] { "upperleg", "upper_leg", "upleg", "thigh", "leg" } },
+            { "lowerleg", new[] { "lowerleg", "lower_leg", "lowleg", "knee", "calf", "shin" } },
+            { "foot", new[] { "foot", "ankle", "feet" } },
+            { "toe", new[] { "toe", "toes" } },
+            
+            // 躯干
             { "spine", new[] { "spine", "back", "torso" } },
-            { "head", new[] { "head", "neck" } },
+            { "chest", new[] { "chest", "breast", "bust" } },
+            { "hips", new[] { "hips", "pelvis", "hip" } },
+            
+            // 头部
+            { "head", new[] { "head", "skull" } },
+            { "neck", new[] { "neck" } },
         };
         
         public BoneMappingResult FindTarget(Transform source, Transform sourceRoot, Transform targetRoot, HashSet<Transform> excludeTransforms = null)
@@ -59,8 +75,10 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
                 var sourcePrefix = ExtractNamePrefix(sourceName);
                 var targetPrefix = ExtractNamePrefix(targetName);
                 var prefixSimilarity = CalculatePrefixSimilarity(sourcePrefix, targetPrefix);
-                
-                if (prefixSimilarity < 0.5f)
+
+                // 降低阈值，允许语义匹配但字符匹配度较低的情况通过
+                // 因为 CheckPrefixVariants 已经在 CalculatePrefixSimilarity 中处理了语义匹配
+                if (prefixSimilarity < 0.4f)
                     continue;
                 
                 // === 优先级2：同级别（层级深度）- 强制约束 ===
@@ -387,20 +405,38 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
             
             if (sourcePrefix == targetPrefix)
                 return 1.0f;
-            
+
+            // === 优先级1：检查 CommonVariants 语义映射 ===
+            // 先检查两个前缀是否属于同一个语义组（如 leg 组包含 lowerleg, knee, thigh 等）
+            var variantSimilarity = CheckPrefixVariants(sourcePrefix, targetPrefix);
+            if (variantSimilarity > 0.7f)
+            {
+                // 如果语义匹配度高，直接返回高分，避免被后续的字符匹配过滤掉
+                return variantSimilarity;
+            }
+
             var sourceNumbers = ExtractNumbers(sourcePrefix);
             var targetNumbers = ExtractNumbers(targetPrefix);
             var sourceSide = DetectSideMarker(sourcePrefix, isNormalized: true);
             var targetSide = DetectSideMarker(targetPrefix, isNormalized: true);
-            
-            // 提取纯主体名称（移除数字和 L/R）
-            var sourcePureName = System.Text.RegularExpressions.Regex.Replace(sourcePrefix, @"[lr]?\d*[lr]?$", "");
-            var targetPureName = System.Text.RegularExpressions.Regex.Replace(targetPrefix, @"[lr]?\d*[lr]?$", "");
+
+            // 提取纯主体名称（移除数字和 L/R 后缀）
+            var sourcePureName = System.Text.RegularExpressions.Regex.Replace(sourcePrefix, @"[lr]$", "");
+            var targetPureName = System.Text.RegularExpressions.Regex.Replace(targetPrefix, @"[lr]$", "");
             sourcePureName = System.Text.RegularExpressions.Regex.Replace(sourcePureName, @"\d+", "");
             targetPureName = System.Text.RegularExpressions.Regex.Replace(targetPureName, @"\d+", "");
-            sourcePureName = System.Text.RegularExpressions.Regex.Replace(sourcePureName, @"[lr]", "");
-            targetPureName = System.Text.RegularExpressions.Regex.Replace(targetPureName, @"[lr]", "");
-            
+
+            // 移除开头的 "left" 和 "right"
+            if (sourcePureName.StartsWith("left"))
+                sourcePureName = sourcePureName.Substring(4);
+            else if (sourcePureName.StartsWith("right"))
+                sourcePureName = sourcePureName.Substring(5);
+
+            if (targetPureName.StartsWith("left"))
+                targetPureName = targetPureName.Substring(4);
+            else if (targetPureName.StartsWith("right"))
+                targetPureName = targetPureName.Substring(5);
+
             if (string.IsNullOrEmpty(sourcePureName) || string.IsNullOrEmpty(targetPureName) ||
                 sourcePureName.Length < 2 || targetPureName.Length < 2)
             {
@@ -419,10 +455,19 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
                 else
                     break;
             }
-            
-            if (consecutiveMatchCount < 2)
+
+            // 如果语义匹配度较高，降低字符匹配的要求
+            var minMatchThreshold = variantSimilarity > 0.5f ? 1 : 2;
+            if (consecutiveMatchCount < minMatchThreshold)
+            {
+                // 即使字符匹配度低，如果语义匹配度高，也给予一定分数
+                if (variantSimilarity > 0.5f)
+                {
+                    return variantSimilarity * 0.8f;
+                }
                 return 0f;
-            
+            }
+
             var baseSimilarity = (float)consecutiveMatchCount / maxLength;
             
             // 主体名称完全匹配加成
@@ -445,16 +490,122 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
             
             // 前缀匹配加成
             var prefixBonus = (consecutiveMatchCount == minLength) ? 0.05f : 0f;
-            
-            var finalSimilarity = Math.Min(1.0f, baseSimilarity + pureNameBonus + numberBonus + sideBonus + prefixBonus);
-            
+
+            // 语义变体匹配加成（如果之前已经检查过）
+            var variantBonus = variantSimilarity > 0.5f ? variantSimilarity * 0.2f : 0f;
+
+            var finalSimilarity = Math.Min(1.0f, baseSimilarity + pureNameBonus + numberBonus + sideBonus + prefixBonus + variantBonus);
+
             return finalSimilarity;
         }
-        
+
+        /// <summary>
+        /// 检查两个前缀是否属于 CommonVariants 中的同一个语义组
+        /// 例如：lowerleg 和 knee 都属于 leg 组，应该给予高分
+        /// </summary>
+        private float CheckPrefixVariants(string sourcePrefix, string targetPrefix)
+        {
+            if (string.IsNullOrEmpty(sourcePrefix) || string.IsNullOrEmpty(targetPrefix))
+                return 0f;
+
+            // 步骤1: 移除末尾的 L/R 标记（如 .L, .R, l, r）
+            var sourcePure = System.Text.RegularExpressions.Regex.Replace(sourcePrefix, @"[lr]$", "");
+            var targetPure = System.Text.RegularExpressions.Regex.Replace(targetPrefix, @"[lr]$", "");
+
+            // 步骤2: 移除所有数字
+            sourcePure = System.Text.RegularExpressions.Regex.Replace(sourcePure, @"\d+", "");
+            targetPure = System.Text.RegularExpressions.Regex.Replace(targetPure, @"\d+", "");
+
+            // 步骤3: 移除开头的 "left" 和 "right"
+            if (sourcePure.StartsWith("left"))
+                sourcePure = sourcePure.Substring(4);
+            else if (sourcePure.StartsWith("right"))
+                sourcePure = sourcePure.Substring(5);
+
+            if (targetPure.StartsWith("left"))
+                targetPure = targetPure.Substring(4);
+            else if (targetPure.StartsWith("right"))
+                targetPure = targetPure.Substring(5);
+
+
+            // 检查每个变体组
+            foreach (var kvp in CommonVariants)
+            {
+                bool sourceInGroup = false;
+                bool targetInGroup = false;
+                string matchedSourceVariant = null;
+                string matchedTargetVariant = null;
+
+                // 检查源前缀是否属于这个组
+                foreach (var variant in kvp.Value)
+                {
+                    // 更精确的匹配：检查是否是完整单词匹配或包含关系
+                    // 处理情况：
+                    // 1. 完全匹配：lowerleg == lowerleg
+                    // 2. 包含关系：lowerleg 包含 leg，knee 包含在 rightknee 中
+                    // 3. 复合词：lowerleg 和 leg 的关系
+                    if (sourcePure == variant)
+                    {
+                        sourceInGroup = true;
+                        matchedSourceVariant = variant;
+                        break;
+                    }
+
+                    // 检查是否包含（至少3个字符，避免误匹配）
+                    if (variant.Length >= 3 && sourcePure.Contains(variant))
+                    {
+                        sourceInGroup = true;
+                        matchedSourceVariant = variant;
+                        break;
+                    }
+
+                    if (sourcePure.Length >= 3 && variant.Contains(sourcePure))
+                    {
+                        sourceInGroup = true;
+                        matchedSourceVariant = variant;
+                        break;
+                    }
+                }
+
+                // 检查目标前缀是否属于这个组
+                foreach (var variant in kvp.Value)
+                {
+                    if (targetPure == variant)
+                    {
+                        targetInGroup = true;
+                        matchedTargetVariant = variant;
+                        break;
+                    }
+
+                    if (variant.Length >= 3 && targetPure.Contains(variant))
+                    {
+                        targetInGroup = true;
+                        matchedTargetVariant = variant;
+                        break;
+                    }
+
+                    if (targetPure.Length >= 3 && variant.Contains(targetPure))
+                    {
+                        targetInGroup = true;
+                        matchedTargetVariant = variant;
+                        break;
+                    }
+                }
+
+                // 如果两者都属于同一个组，返回高分
+                if (sourceInGroup && targetInGroup)
+                {
+                    return 0.85f; // 返回高相似度
+                }
+            }
+
+            return 0f;
+        }
+
         #endregion
-        
+
         #region 名称相似度计算
-        
+
         private float CalculateSimilarity(string normalizedSource, string normalizedTarget, string originalSource, string originalTarget)
         {
             if (string.IsNullOrEmpty(normalizedSource) || string.IsNullOrEmpty(normalizedTarget))

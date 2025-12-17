@@ -54,8 +54,6 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
                         success = false;
                         continue;
                     }
-
-                    YuebyLogger.LogInfo("AnimatorTransferPlugin", $"转移Animator组件: {sourceAnimator.name}");
                 }
                 catch (System.Exception e)
                 {

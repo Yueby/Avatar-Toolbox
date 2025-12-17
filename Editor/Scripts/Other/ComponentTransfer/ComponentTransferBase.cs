@@ -118,7 +118,6 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
             // 2. 检查跳过缓存
             if (_skippedBones.Contains(source))
             {
-                YuebyLogger.LogInfo("BoneMapping", $"骨骼已被跳过（缓存）: {source.name}");
                 return null;
             }
 
@@ -169,8 +168,6 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
                                 {
                                     _boneMappingManager.AddManualMapping(source, previouslySelectedTarget);
                                     _targetCache[source] = previouslySelectedTarget;
-                                    YuebyLogger.LogInfo("BoneMapping",
-                                        $"应用上次选择的映射: {source.name} -> {previouslySelectedTarget.name}");
                                     return previouslySelectedTarget.gameObject;
                                 }
                             }
@@ -213,6 +210,9 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
                 BoneMappingUserResult userResult = null;
                 bool userMadeChoice = false;
 
+                // 查找最近匹配的父级骨骼
+                var nearestMatchedParent = FindNearestMatchedParent(source, SourceRoot, targetRoot);
+
                 BoneMappingRecommendationWindow.Show(
                     source,
                     SourceRoot,
@@ -222,7 +222,8 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
                     {
                         userResult = result;
                         userMadeChoice = true;
-                    }
+                    },
+                    nearestMatchedParent
                 );
 
                 // 3. 处理用户选择并记录到跨目标缓存
@@ -245,16 +246,12 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
 
                                 _boneMappingManager.AddManualMapping(source, userResult.SelectedTarget);
                                 _targetCache[source] = userResult.SelectedTarget;
-                                YuebyLogger.LogInfo("BoneMapping",
-                                    $"用户选择映射: {source.name} -> {userResult.SelectedTarget.name}（已记录决策）");
                                 return userResult.SelectedTarget.gameObject;
                             }
                             break;
 
                         case BoneMappingUserChoice.CreateNew:
                             _crossTargetDecisions[sourceRelativePath] = decision;
-                            YuebyLogger.LogInfo("BoneMapping",
-                                $"用户选择创建新骨骼: {source.name}（已记录决策）");
 
                             // 智能创建：基于父级匹配来创建新骨骼
                             var newTarget = CreateTargetObjectSmart(source, targetRoot);
@@ -267,8 +264,6 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
 
                         case BoneMappingUserChoice.Skip:
                             _crossTargetDecisions[sourceRelativePath] = decision;
-                            YuebyLogger.LogInfo("BoneMapping",
-                                $"用户跳过骨骼: {source.name}（已记录决策，后续目标将自动跳过）");
                             if (!_skippedBones.Contains(source))
                             {
                                 _skippedBones.Add(source);
@@ -342,7 +337,6 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
             var existingChild = targetParent.Find(source.name);
             if (existingChild != null)
             {
-                YuebyLogger.LogInfo("BoneMapping", $"对象已存在: {source.name}");
                 return existingChild;
             }
 
@@ -407,6 +401,42 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
             }
 
             return current;
+        }
+
+        /// <summary>
+        /// 查找源骨骼的最近匹配父级（在目标对象上）
+        /// 从源骨骼的父级开始向上遍历，返回第一个成功匹配的父级骨骼（不包括根对象）
+        /// </summary>
+        public Transform FindNearestMatchedParent(Transform source, Transform sourceRoot, Transform targetRoot)
+        {
+            if (source == null || sourceRoot == null || targetRoot == null)
+                return null;
+
+            var current = source.parent;
+
+            // 从当前骨骼的父级开始向上遍历
+            while (current != null && current != sourceRoot)
+            {
+                // 尝试使用骨骼映射管理器查找匹配
+                if (_boneMappingManager != null)
+                {
+                    var mappingResult = _boneMappingManager.FindBestMatch(current, sourceRoot, targetRoot, _autoCreatedObjects);
+                    if (mappingResult != null && mappingResult.Target != null && mappingResult.Confidence >= 0.8f)
+                    {
+                        // 找到第一个高置信度匹配且不是根对象的父级，立即返回
+                        if (mappingResult.Target != targetRoot)
+                        {
+                            YuebyLogger.LogInfo("BoneMapping", 
+                                $"找到最近匹配父级: {current.name} -> {mappingResult.Target.name} (置信度: {mappingResult.Confidence:P0})");
+                            return mappingResult.Target;
+                        }
+                    }
+                }
+
+                current = current.parent;
+            }
+
+            return null;
         }
 
         protected T CopyComponentWithUndo<T>(GameObject source, GameObject target, string undoName = null) where T : Component

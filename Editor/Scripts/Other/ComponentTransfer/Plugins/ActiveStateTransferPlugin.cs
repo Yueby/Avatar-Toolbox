@@ -59,8 +59,6 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
                         targetGo.SetActive(sourceActive);
                         UnityEditor.EditorUtility.SetDirty(targetGo);
                         syncedCount++;
-
-                        YuebyLogger.LogInfo("ActiveStateTransferPlugin", $"同步激活状态: {sourceTransform.name}");
                     }
                 }
                 catch (System.Exception e)
@@ -68,11 +66,6 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
                     YuebyLogger.LogError("ActiveStateTransferPlugin", $"同步激活状态时发生错误 {sourceTransform.name}: {e.Message}");
                     success = false;
                 }
-            }
-
-            if (syncedCount > 0)
-            {
-                YuebyLogger.LogInfo("ActiveStateTransferPlugin", $"同步了 {syncedCount}/{totalObjects} 个激活状态");
             }
 
             return success;

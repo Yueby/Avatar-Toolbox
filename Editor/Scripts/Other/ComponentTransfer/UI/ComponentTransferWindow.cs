@@ -220,7 +220,6 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
 
             // 清空跨目标决策缓存（开始新的转移任务）
             ComponentTransferBase.ClearCrossTargetDecisions();
-            YuebyLogger.LogInfo("ComponentTransfer", "已清空跨目标决策缓存，开始新的转移任务");
 
             // 重置所有插件的停止标志和全局窗口标志
             foreach (var plugin in enabledPlugins)
@@ -241,7 +240,6 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
                 if (target == null) continue;
 
                 processedTargets++;
-                YuebyLogger.LogInfo("ComponentTransfer", $"开始处理目标: {target.name}");
 
                 foreach (var plugin in enabledPlugins)
                 {
@@ -269,12 +267,7 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
                             
                             if (!success)
                             {
-                                YuebyLogger.LogWarning("ComponentTransfer", $"插件 {plugin.Name} 转移失败");
                                 overallSuccess = false;
-                            }
-                            else
-                            {
-                                YuebyLogger.LogInfo("ComponentTransfer", $"插件 {plugin.Name} 转移成功");
                             }
                         }
                         catch (System.Exception e)
@@ -282,10 +275,6 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
                             YuebyLogger.LogError("ComponentTransfer", $"插件 {plugin.Name} 执行时发生错误: {e.Message}");
                             overallSuccess = false;
                         }
-                    }
-                    else
-                    {
-                        YuebyLogger.LogInfo("ComponentTransfer", $"插件 {plugin.Name} 跳过 (无可转移内容)");
                     }
                 }
                 
@@ -305,7 +294,6 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
                 else if (overallSuccess)
                 {
                     message = "转移完成";
-                    YuebyLogger.LogInfo("ComponentTransfer", "所有转移操作完成");
                 }
                 else
                 {

@@ -42,7 +42,7 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
                 return new BoneMappingResult
                 {
                     Target = matches[0],
-                    Confidence = 0.85f,
+                    Confidence = 0.95f,  // 提高到 95%，名字完全相同且唯一匹配应该有更高置信度
                     Strategy = Name
                 };
             }

@@ -18,7 +18,8 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
         private int _selectedIndex = 0;
         private Transform _sourceRoot;
         private Transform _targetRoot;
-        
+        private Transform _nearestMatchedParent;  // 最近匹配的父级骨骼
+
         // 全局停止标志，用于防止多个窗口排队显示
         private static bool _globalStopRequested = false;
         
@@ -26,8 +27,8 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
         {
             _globalStopRequested = false;
         }
-        
-        public static void Show(Transform sourceBone, Transform sourceRoot, Transform targetRoot, List<Transform> candidates, System.Action<BoneMappingUserResult> onConfirm)
+
+        public static void Show(Transform sourceBone, Transform sourceRoot, Transform targetRoot, List<Transform> candidates, System.Action<BoneMappingUserResult> onConfirm, Transform nearestMatchedParent = null)
         {
             // 如果已经请求停止，直接返回停止结果，不显示窗口
             if (_globalStopRequested)
@@ -46,6 +47,7 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
             window._targetRoot = targetRoot;
             window._candidates = candidates ?? new List<Transform>();
             window._onConfirm = onConfirm;
+            window._nearestMatchedParent = nearestMatchedParent;
             window.minSize = new Vector2(600, 500);
             window.maxSize = new Vector2(800, 800);
             window.ShowModal();
@@ -55,10 +57,35 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
         {
             // 在右上角绘制停止按钮
             DrawStopButton();
-            
+
             EditorGUILayout.LabelField("骨骼映射推荐", EditorStyles.boldLabel);
             EditorGUILayout.Space();
-            
+
+            // 目标对象信息（简洁显示）
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField($"目标对象: {_targetRoot.name}");
+
+            // 如果有最近匹配的父级，显示检查按钮
+            if (_nearestMatchedParent != null)
+            {
+                if (GUILayout.Button("检查", GUILayout.Width(50)))
+                {
+                    // 如果父级骨骼有子对象，选中第一个子对象；否则选中父级自己
+                    Transform targetToSelect = _nearestMatchedParent;
+                    if (_nearestMatchedParent.childCount > 0)
+                    {
+                        targetToSelect = _nearestMatchedParent.GetChild(0);
+                    }
+
+                    Selection.activeObject = targetToSelect.gameObject;
+                    EditorGUIUtility.PingObject(targetToSelect.gameObject);
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.Space(5);
+
+            // 源骨骼信息（详细显示）
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.LabelField("源骨骼信息", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
@@ -72,7 +99,16 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
             
             if (_candidates.Count == 0)
             {
-                EditorGUILayout.HelpBox("未找到匹配的候选骨骼，建议创建新骨骼或手动选择", MessageType.Warning);
+                var message = "未找到匹配的候选骨骼";
+                if (_nearestMatchedParent != null)
+                {
+                    message += "\n\n已找到父级骨骼在目标对象上的对应位置\n点击【检查】可在Hierarchy中定位，展开查看其子骨骼";
+                }
+                else
+                {
+                    message += "\n\n点击【定位】按钮查看目标对象的骨骼结构";
+                }
+                EditorGUILayout.HelpBox(message, MessageType.Warning);
             }
             else
             {

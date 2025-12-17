@@ -27,15 +27,12 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
         {
             if (!IsEnabled) return true;
 
-            YuebyLogger.LogInfo("PhysBoneTransferPlugin", $"开始转移PhysBone，源根对象: {sourceRoot?.name}, 目标根对象: {targetRoot?.name}");
-
             // 设置根对象
             SetRootObjects(sourceRoot, targetRoot);
             bool success = true;
 
             if (_transferPhysBone)
             {
-                YuebyLogger.LogInfo("PhysBoneTransferPlugin", "开始转移PhysBone组件");
                 success &= TransferPhysBones();
                 
                 // 如果用户停止了，立即返回
@@ -48,7 +45,6 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
 
             if (_transferPhysBoneCollider)
             {
-                YuebyLogger.LogInfo("PhysBoneTransferPlugin", "开始转移PhysBone碰撞器");
                 success &= TransferPhysBoneColliders();
                 
                 // 如果用户停止了，立即返回
@@ -59,7 +55,6 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
                 }
             }
 
-            YuebyLogger.LogInfo("PhysBoneTransferPlugin", $"PhysBone转移完成，结果: {(success ? "成功" : "部分失败")}");
             return success;
         }
 
@@ -126,8 +121,6 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
                     {
                         targetPhysBone.colliders = GetColliders(physBone.colliders);
                     }
-
-                    YuebyLogger.LogInfo("PhysBoneTransferPlugin", $"转移PhysBone组件: {sourceTransform.name}");
                 }
                 catch (System.Exception e)
                 {
@@ -186,8 +179,6 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
                             YuebyLogger.LogWarning("PhysBoneTransferPlugin", $"未找到碰撞器根变换: {collider.rootTransform.name}");
                         }
                     }
-
-                    YuebyLogger.LogInfo("PhysBoneTransferPlugin", $"转移碰撞器组件: {sourceTransform.name}");
                 }
                 catch (System.Exception e)
                 {

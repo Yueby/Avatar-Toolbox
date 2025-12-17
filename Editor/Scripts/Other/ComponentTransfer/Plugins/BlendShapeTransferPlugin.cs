@@ -101,13 +101,9 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
                     // 标记为已修改
                     UnityEditor.EditorUtility.SetDirty(targetRenderer);
 
-                    if (transferredCount > 0)
+                    if (transferredCount == 0)
                     {
-                        YuebyLogger.LogInfo("BlendShapeTransferPlugin", $"转移BlendShape权重: {sourceRenderer.name}");
-                    }
-                    else
-                    {
-                        YuebyLogger.LogWarning("BlendShapeTransferPlugin", $"未找到匹配的BlendShape {sourceRenderer.name}");
+                        YuebyLogger.LogWarning("BlendShapeTransferPlugin", $"未找到匹配的BlendShape: {sourceRenderer.name}");
                     }
                 }
                 catch (System.Exception e)
