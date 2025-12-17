@@ -121,6 +121,12 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
                     {
                         targetPhysBone.colliders = GetColliders(physBone.colliders);
                     }
+
+                    // 处理 ignoreTransforms
+                    if (physBone.ignoreTransforms != null && physBone.ignoreTransforms.Count > 0)
+                    {
+                        targetPhysBone.ignoreTransforms = GetIgnoreTransforms(physBone.ignoreTransforms);
+                    }
                 }
                 catch (System.Exception e)
                 {
@@ -226,6 +232,30 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor.Plugins
                 else
                 {
                     YuebyLogger.LogWarning("PhysBoneTransferPlugin", $"无法为目标碰撞器引用创建对象: {collider.name}");
+                }
+            }
+
+            return list;
+        }
+
+        private List<Transform> GetIgnoreTransforms(List<Transform> ignoreTransforms)
+        {
+            List<Transform> list = new List<Transform>();
+
+            if (ignoreTransforms == null) return list;
+
+            foreach (var ignoreTransform in ignoreTransforms)
+            {
+                if (ignoreTransform == null) continue;
+
+                var targetGo = GetOrCreateTargetObject(ignoreTransform, TargetRoot);
+                if (targetGo != null)
+                {
+                    list.Add(targetGo.transform);
+                }
+                else
+                {
+                    YuebyLogger.LogWarning("PhysBoneTransferPlugin", $"无法为 ignoreTransform 找到目标对象: {ignoreTransform.name}");
                 }
             }
 
