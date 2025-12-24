@@ -1,0 +1,99 @@
+.detail-header {
+    flex-direction: row;
+    height: 40px;
+    align-items: center;
+    background-color: var(--unity-colors-toolbar-background);
+    padding: 0 10px;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--unity-colors-default-border);
+}
+
+.group-name-input {
+    flex-grow: 1;
+    flex-shrink: 1; /* 允许缩小 */
+    margin-right: 10px;
+    font-size: 14px;
+    -unity-font-style: bold;
+    min-width: 100px; /* 防止缩得太小 */
+}
+
+.theme-color-field {
+    width: 60px;
+    min-width: 60px;
+    margin-left: 10px;
+    flex-shrink: 0; /* 禁止缩小 */
+}
+
+.section-header {
+    background-color: var(--unity-colors-window-background);
+    -unity-font-style: bold;
+    padding: 5px;
+    border-bottom-width: 1px;
+    border-bottom-color: var(--unity-colors-default-border);
+}
+
+.detail-left-pane {
+    min-width: 200px;
+    background-color: var(--unity-colors-box-background);
+}
+
+.renderer-list {
+    flex-grow: 1;
+     padding: 2px;
+}
+
+.list-toolbar {
+    flex-direction: row;
+    height: 24px;
+    background-color: var(--unity-colors-toolbar-background);
+    border-top-width: 1px;
+    border-top-color: var(--unity-colors-default-border);
+}
+
+.toolbar-btn {
+    width: 24px;
+    height: 20px;
+    margin: 2px;
+}
+
+.detail-right-pane {
+    flex-grow: 1;
+    padding: 10px;
+    background-color: var(--unity-colors-window-background);
+}
+
+.slots-scroll-view {
+    flex-grow: 1;
+    padding: 2px;
+}
+
+.placeholder-text {
+    align-self: center;
+    margin-top: 50px;
+    color: var(--unity-colors-label-text-dim);
+}
+
+/* Slot Item Styles (Dynamic) */
+.slot-item {
+    background-color: var(--unity-colors-box-background);
+    border-radius: 5px;
+    padding: 8px;
+    margin-bottom: 8px;
+    border-width: 1px;
+    border-color: var(--unity-colors-default-border);
+}
+
+.slot-header {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.slot-name {
+    -unity-font-style: bold;
+}
+
+.slot-match-mode {
+    width: 120px;
+}
+

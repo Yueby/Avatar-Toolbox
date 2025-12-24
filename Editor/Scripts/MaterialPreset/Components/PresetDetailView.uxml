@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi:noNamespaceSchemaLocation="../../../../../../../UIElementsSchema/UIElements.xsd"
+>
+    <!-- Main Split View -->
+    <engine:TwoPaneSplitView fixed-pane-index="0" fixed-pane-initial-dimension="250">
+        <!-- Left: Renderers List -->
+        <engine:VisualElement class="detail-left-pane">
+            <engine:Label text="渲染器" class="section-header" />
+            <engine:ListView name="list-renderers" class="renderer-list" />
+            <engine:VisualElement class="list-toolbar">
+                <engine:Button name="btn-add-renderer" text="+" class="toolbar-btn" />
+                <engine:Button name="btn-remove-renderer" text="-" class="toolbar-btn" />
+            </engine:VisualElement>
+        </engine:VisualElement>
+
+        <!-- Right: Material Slots -->
+        <engine:VisualElement class="detail-right-pane">
+            <engine:Label text="材质配置" class="section-header" />
+            <engine:ScrollView name="scroll-slots" class="slots-scroll-view">
+                <engine:Label text="选择一个渲染器以编辑材质" name="label-no-selection" class="placeholder-text" />
+                <engine:VisualElement name="slots-container" />
+            </engine:ScrollView>
+        </engine:VisualElement>
+    </engine:TwoPaneSplitView>
+</engine:UXML>
+

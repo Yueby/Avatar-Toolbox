@@ -1,0 +1,61 @@
+.root-container {
+    flex-grow: 1;
+    height: 100%;
+    background-color: var(--unity-colors-window-background);
+    flex-direction: column;
+}
+
+.breadcrumb-container {
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(0, 0, 0, 0.2);
+    min-height: 20px;
+    flex-shrink: 0;
+}
+
+.toolbar-container {
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(0, 0, 0, 0.2);
+    flex-shrink: 0;
+}
+
+.content-container {
+    flex-grow: 1;
+    flex-direction: column;
+}
+
+.view-container {
+    flex-grow: 1;
+    height: 100%;
+    flex-direction: column;
+}
+
+.grid-toolbar {
+    /* Native Toolbar handles background and borders */
+    flex-direction: row;
+    height: 24px; /* Standard Toolbar height */
+    align-items: center;
+    padding-left: 6px;
+    padding-right: 6px;
+}
+
+.search-bar {
+    width: 200px;
+}
+
+.toolbar-action-btn {
+    /* No explicit height needed for ToolbarButton, it fits automatically */
+    margin-left: 4px;
+    min-width: 80px;
+}
+
+.grid-scroll-view {
+    flex-grow: 1;
+}
+
+.grid-content {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 10px;
+}

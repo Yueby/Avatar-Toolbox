@@ -1,0 +1,57 @@
+.breadcrumb-bar {
+    flex-direction: row;
+    align-items: center;
+    height: 20px;
+    background-color: transparent;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+.breadcrumb-item {
+    background-color: transparent;
+    border-width: 0;
+    border-radius: 2px;
+    margin-right: 1px;
+    padding: 1px 4px;
+    color: var(--unity-colors-label-text);
+    -unity-text-align: middle-center;
+    transition-property: background-color, color;
+    transition-duration: 0.15s;
+    transition-timing-function: ease-out;
+    font-size: 11px;
+}
+
+.breadcrumb-item:hover {
+    background-color: var(--unity-colors-button-background-hover);
+}
+
+.breadcrumb-item:active {
+    background-color: var(--unity-colors-button-background-pressed);
+    transition-duration: 0.05s; /* Press should be snappier */
+}
+
+.breadcrumb-item--current {
+    -unity-font-style: bold;
+    color: var(--unity-colors-label-text-focus);
+    cursor: initial;
+}
+
+.breadcrumb-item--current:hover {
+    background-color: transparent; /* 当前路径悬停不改变背景 */
+}
+
+.breadcrumb-separator {
+    color: var(--unity-colors-label-text-dimmed);
+    margin-left: 1px;
+    margin-right: 2px;
+    -unity-font-style: bold;
+    font-size: 10px;
+    opacity: 0.7;
+}
+
+/* 拖拽悬停时的样式 */
+.breadcrumb-item--drag-hover {
+    background-color: rgba(70, 150, 255, 0.4);
+    border-radius: 3px;
+}
+

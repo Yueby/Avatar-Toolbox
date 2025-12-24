@@ -1,0 +1,20 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../../UIElementsSchema/UIElements.xsd">
+    <Style src="project://database/Packages/yueby.tools.avatar-toolbox/Editor/Scripts/MaterialPreset/MaterialPresetEditorWindow.uss?fileID=7433441132597879392&amp;guid=ad3e7dbf36f84674bbbf7f688c15ed2b&amp;type=3#MaterialPresetEditorWindow" />
+    <ui:VisualElement class="root-container">
+        <!-- 可切换工具栏容器 -->
+        <ui:VisualElement name="toolbar-container" class="toolbar-container" />
+        
+        <!-- 全局面包屑 -->
+        <ui:VisualElement name="breadcrumb-container" class="breadcrumb-container" />
+        
+        <!-- 内容容器（Grid View / Detail View） -->
+        <ui:VisualElement name="content-container" class="content-container">
+        <ui:VisualElement name="view-grid" class="view-container">
+            <ui:ScrollView name="grid-scroll" class="grid-scroll-view">
+                <ui:VisualElement name="grid-content" class="grid-content" />
+            </ui:ScrollView>
+        </ui:VisualElement>
+        <ui:VisualElement name="view-detail" class="view-container" style="display: none;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

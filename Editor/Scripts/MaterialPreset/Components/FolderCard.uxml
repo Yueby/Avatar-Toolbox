@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi:noNamespaceSchemaLocation="../../../../../../../UIElementsSchema/UIElements.xsd"
+>
+    <engine:VisualElement name="folder-root" class="folder-card">
+        <engine:VisualElement name="folder-image" class="folder-card-image" />
+        <engine:VisualElement name="folder-color-strip" class="folder-card-strip" />
+        <engine:VisualElement name="folder-content" class="folder-card-content">
+            <engine:Label name="folder-title" text="Folder Name" class="folder-card-title" />
+            <engine:TextField name="folder-rename-field" class="folder-card-rename-field" style="display: none;" />
+            <engine:VisualElement class="folder-card-footer-row">
+                <engine:Label name="folder-info" text="3 Items" class="folder-card-info" />
+            </engine:VisualElement>
+        </engine:VisualElement>
+        
+        <!-- Overlay on top -->
+        <engine:VisualElement name="folder-header-overlay" class="folder-card-header-overlay">
+            <engine:Label name="folder-index" class="folder-card-index" text="00" />
+            <engine:Toggle name="toggle-folder-preview" class="folder-card-preview-toggle" tooltip="Toggle All Previews in Folder" />
+        </engine:VisualElement>
+    </engine:VisualElement>
+</engine:UXML>
+

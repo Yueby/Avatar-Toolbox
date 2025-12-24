@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:engine="UnityEngine.UIElements"
+    xmlns:editor="UnityEditor.UIElements"
+    xsi:noNamespaceSchemaLocation="../../../../../../../UIElementsSchema/UIElements.xsd"
+>
+    <engine:VisualElement name="card-root" class="preset-card">
+        <engine:VisualElement name="card-image" class="preset-card-image" />
+        <engine:VisualElement name="card-color-strip" class="preset-card-strip" />
+        <engine:VisualElement name="card-content" class="preset-card-content">
+            <engine:Label name="card-title" text="Group Name" class="preset-card-title" />
+            <engine:TextField name="card-rename-field" class="preset-card-rename-field" style="display: none;" />
+            <engine:VisualElement class="preset-card-footer-row">
+                <engine:Label name="card-info" text="3 Renderers" class="preset-card-info" />
+                <engine:Button name="btn-locate" class="preset-card-action-btn" tooltip="Locate Preview" />
+                <engine:Button name="btn-apply" class="preset-card-action-btn" tooltip="Apply to Original" />
+            </engine:VisualElement>
+        </engine:VisualElement>
+        
+        <!-- Overlay on top -->
+        <engine:VisualElement name="card-header-overlay" class="preset-card-header-overlay">
+            <engine:Label name="card-index" class="preset-card-index" text="00" />
+            <engine:Toggle name="toggle-preview" class="preset-card-preview-toggle" tooltip="Toggle Preview" />
+        </engine:VisualElement>
+        
+        <engine:Button name="card-edit-btn" class="preset-card-hidden-btn" text="Edit" />
+    </engine:VisualElement>
+</engine:UXML>
+

@@ -52,7 +52,7 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
             _plugins.Add(new Plugins.ModularAvatarTransferPlugin());
         }
 
-        [MenuItem("Tools/YuebyTools/Utils/Component Transfer", false, 21)]
+        [MenuItem("Tools/YuebyTools/VRChat/Avatar/Component Transfer", false, 11)]
         public static void OpenWindow()
         {
             var window = CreateWindow<ComponentTransferWindow>();
