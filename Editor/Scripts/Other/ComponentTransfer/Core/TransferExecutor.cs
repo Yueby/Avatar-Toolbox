@@ -60,6 +60,14 @@ namespace YuebyAvatarTools.ComponentTransfer.Editor
             {
                 if (target == null) continue;
                 
+                // 检查目标对象是否有子对象
+                if (target.childCount == 0)
+                {
+                    YuebyLogger.LogWarning("ComponentTransfer", 
+                        $"跳过目标对象 '{target.name}'：该对象没有子对象，无法进行组件转移");
+                    continue;
+                }
+                
                 currentStep++;
                 
                 // 报告进度（每个目标对象一次）
