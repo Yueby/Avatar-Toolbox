@@ -289,8 +289,7 @@ namespace Yueby.Tools.AvatarToolbox.MaterialPreset.Editor.Components
                 var config = new RendererConfig
                 {
                     RendererPath = GetRelativePath(r.transform, _manager.transform),
-                    TargetRenderer = r,
-                    MatchMode = MatchMode.NameThenIndex
+                    TargetRenderer = r
                 };
                 for (int i = 0; i < r.sharedMaterials.Length; i++)
                 {

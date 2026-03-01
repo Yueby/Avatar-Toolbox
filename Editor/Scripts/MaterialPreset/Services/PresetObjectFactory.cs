@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using Yueby.Tools.AvatarToolbox.MaterialPreset;
@@ -126,62 +125,17 @@ namespace Yueby.Tools.AvatarToolbox.MaterialPreset.Editor.Services
                 var newMaterials = new Material[currentMaterials.Length];
                 Array.Copy(currentMaterials, newMaterials, currentMaterials.Length);
 
-                var replacedIndices = new HashSet<int>();
-                var appliedSlots = new HashSet<MaterialSlotConfig>();
-
                 foreach (var slot in config.MaterialSlots)
                 {
-                    var match = MaterialMatcher.FindBestMatch(slot, currentMaterials, config.MatchMode);
-                    if (match != null)
-                    {
-                        int index = ResolveMatchedIndex(slot, match, currentMaterials, replacedIndices);
-                        if (index >= 0)
-                        {
-                            newMaterials[index] = slot.MaterialRef;
-                            replacedIndices.Add(index);
-                            appliedSlots.Add(slot);
-                        }
-                    }
-                }
-
-                foreach (var slot in config.MaterialSlots)
-                {
-                    if (!appliedSlots.Contains(slot) &&
-                        slot.SlotIndex >= 0 &&
-                        slot.SlotIndex < newMaterials.Length &&
-                        !replacedIndices.Contains(slot.SlotIndex))
+                    if (slot.SlotIndex >= 0 && slot.SlotIndex < newMaterials.Length)
                     {
                         newMaterials[slot.SlotIndex] = slot.MaterialRef;
-                        replacedIndices.Add(slot.SlotIndex);
-                        appliedSlots.Add(slot);
                     }
                 }
 
                 target.sharedMaterials = newMaterials;
                 EditorUtility.SetDirty(target);
             }
-        }
-
-        private static int ResolveMatchedIndex(MaterialSlotConfig slot, Material matchedMaterial, Material[] currentMaterials, HashSet<int> usedIndices)
-        {
-            if (slot != null &&
-                slot.SlotIndex >= 0 &&
-                slot.SlotIndex < currentMaterials.Length &&
-                !usedIndices.Contains(slot.SlotIndex) &&
-                currentMaterials[slot.SlotIndex] == matchedMaterial)
-            {
-                return slot.SlotIndex;
-            }
-
-            for (int i = 0; i < currentMaterials.Length; i++)
-            {
-                if (!usedIndices.Contains(i) && currentMaterials[i] == matchedMaterial)
-                {
-                    return i;
-                }
-            }
-
-            return -1;
         }
     }
 }

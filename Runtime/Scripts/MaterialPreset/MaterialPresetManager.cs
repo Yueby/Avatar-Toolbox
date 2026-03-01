@@ -95,9 +95,6 @@ namespace Yueby.Tools.AvatarToolbox.MaterialPreset
 
         [SerializeField]
         public List<MaterialSlotConfig> MaterialSlots = new List<MaterialSlotConfig>();
-        
-        [SerializeField]
-        public MatchMode MatchMode = MatchMode.NameSimilarity;
     }
 
     [Serializable]
@@ -116,11 +113,4 @@ namespace Yueby.Tools.AvatarToolbox.MaterialPreset
         public string FuzzyName; // For backup or fuzzy matching
     }
 
-    public enum MatchMode
-    {
-        NameSimilarity = 0,
-        SlotIndex = 1,
-        NameThenIndex = 2
-    }
 }
-
