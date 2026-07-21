@@ -151,6 +151,8 @@ namespace Yueby.AvatarTools.ClothesManager
                 _isStartCapture = false;
                 StopCapture(true, true);
             }
+
+            _categoriesRl = null;
         }
 
         private void OnGUI()

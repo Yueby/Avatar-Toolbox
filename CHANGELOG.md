@@ -4,6 +4,12 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.1.9] - 2026-07-21
+### Fixed
+- Prevented duplicate Material Preset UI initialization and event callback registration when the editor window is recreated
+- Cleared stale Clothes Manager category list state when the window is disabled
+- Released temporary thumbnail textures after saving them to avoid editor memory leaks
+
 ## [1.1.8] - 2026-03-01
 ### Changed
 - Material Preset now applies materials strictly by slot index in snapshot order, removing name-based smart matching behavior.

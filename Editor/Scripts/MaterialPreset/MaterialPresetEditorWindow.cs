@@ -53,6 +53,9 @@ namespace Yueby.Tools.AvatarToolbox.MaterialPreset.Editor
 
         public void CreateGUI()
         {
+            UnbindRootCallbacks();
+            rootVisualElement.Clear();
+
             LoadAssets();
             SetupUI();
             FindTargetManager();
@@ -183,19 +186,30 @@ namespace Yueby.Tools.AvatarToolbox.MaterialPreset.Editor
             _detailToolbar.OnClearPreviews += _previewService.ClearAllPreviews;
             _detailToolbar.OnKeepPreviews += _previewService.KeepAllPreviews;
             
-            rootVisualElement.RegisterCallback<DragUpdatedEvent>(evt => {
-                if (evt.target is VisualElement ve && !_presetGridView.Contains(ve) && _presetGridView != ve)
-                {
-                    _presetGridView.OnDragUpdated(evt);
-                }
-            });
-            
-            rootVisualElement.RegisterCallback<DragPerformEvent>(evt => {
-                 if (evt.target is VisualElement ve && !_presetGridView.Contains(ve) && _presetGridView != ve)
-                {
-                    _presetGridView.OnDragPerform(evt);
-                }
-            });
+            rootVisualElement.RegisterCallback<DragUpdatedEvent>(OnRootDragUpdated);
+            rootVisualElement.RegisterCallback<DragPerformEvent>(OnRootDragPerform);
+        }
+
+        private void UnbindRootCallbacks()
+        {
+            rootVisualElement.UnregisterCallback<DragUpdatedEvent>(OnRootDragUpdated);
+            rootVisualElement.UnregisterCallback<DragPerformEvent>(OnRootDragPerform);
+        }
+
+        private void OnRootDragUpdated(DragUpdatedEvent evt)
+        {
+            if (evt.target is VisualElement ve && !_presetGridView.Contains(ve) && _presetGridView != ve)
+            {
+                _presetGridView.OnDragUpdated(evt);
+            }
+        }
+
+        private void OnRootDragPerform(DragPerformEvent evt)
+        {
+            if (evt.target is VisualElement ve && !_presetGridView.Contains(ve) && _presetGridView != ve)
+            {
+                _presetGridView.OnDragPerform(evt);
+            }
         }
 
         private void OnEnable()
@@ -212,6 +226,7 @@ namespace Yueby.Tools.AvatarToolbox.MaterialPreset.Editor
         private void OnDisable()
         {
             Undo.undoRedoPerformed -= OnUndoRedo;
+            UnbindRootCallbacks();
         }
 
         private void OnUndoRedo()

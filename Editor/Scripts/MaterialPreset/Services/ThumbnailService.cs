@@ -134,6 +134,7 @@ namespace Yueby.Tools.AvatarToolbox.MaterialPreset.Editor.Services
             Undo.RecordObject(_manager, "捕获缩略图");
             group.Thumbnail = tex;
             SaveThumbnailAsset(group, tex);
+            Object.DestroyImmediate(tex);
             EditorUtility.SetDirty(_manager);
             _gridView?.Refresh(_manager);
         }
@@ -182,4 +183,3 @@ namespace Yueby.Tools.AvatarToolbox.MaterialPreset.Editor.Services
         }
     }
 }
-

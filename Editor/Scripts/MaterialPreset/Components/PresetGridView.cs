@@ -48,6 +48,7 @@ namespace Yueby.Tools.AvatarToolbox.MaterialPreset.Editor.Components
         private string _currentFilter = "";
         private MainToolbar _toolbar;
         private BreadcrumbNavigation _breadcrumb; // 面包屑引用
+        private bool _initialized;
         
         // Folder Navigation
         private PresetFolder _currentFolder; // null = root
@@ -88,6 +89,9 @@ namespace Yueby.Tools.AvatarToolbox.MaterialPreset.Editor.Components
 
         public void Initialize(VisualTreeAsset cardTemplate, VisualTreeAsset folderTemplate, MainToolbar toolbar, BreadcrumbNavigation breadcrumb = null)
         {
+            if (_initialized) return;
+            _initialized = true;
+
             _cardTemplate = cardTemplate;
             _folderTemplate = folderTemplate;
             _toolbar = toolbar;

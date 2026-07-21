@@ -18,6 +18,7 @@ namespace Yueby.Tools.AvatarToolbox.MaterialPreset.Editor.Components
         private DetailViewToolbar _toolbar;
         private int _selectedRendererIndex = -1;
         private List<RendererConfig> _filteredConfigs; // 保存过滤后的列表
+        private bool _initialized;
 
         // UI References
         private ListView _rendererList;
@@ -29,6 +30,9 @@ namespace Yueby.Tools.AvatarToolbox.MaterialPreset.Editor.Components
 
         public void Initialize(VisualTreeAsset template, DetailViewToolbar toolbar)
         {
+            if (_initialized) return;
+            _initialized = true;
+
             // Ensure the view takes up available space
             style.flexGrow = 1;
             
@@ -41,6 +45,11 @@ namespace Yueby.Tools.AvatarToolbox.MaterialPreset.Editor.Components
             _rendererList = this.Q<ListView>("list-renderers");
             _slotsContainer = this.Q("slots-container");
             _placeholder = this.Q<Label>("label-no-selection");
+
+            if (_rendererList != null)
+            {
+                _rendererList.selectionChanged += OnRendererSelectionChanged;
+            }
 
             // Bind Toolbar Events
             if (_toolbar != null)
@@ -90,17 +99,18 @@ namespace Yueby.Tools.AvatarToolbox.MaterialPreset.Editor.Components
                 };
                 _rendererList.itemsSource = _currentGroup.RendererConfigs;
                 _rendererList.selectionType = SelectionType.Single;
-                _rendererList.selectionChanged += objs =>
-                {
-                    _selectedRendererIndex = _rendererList.selectedIndex;
-                    RefreshMaterialSlots();
-                };
                 
                 // 清除选中状态，确保视觉和逻辑状态一致
                 _rendererList.ClearSelection();
                 _rendererList.RefreshItems();
             }
 
+            RefreshMaterialSlots();
+        }
+
+        private void OnRendererSelectionChanged(IEnumerable<object> objs)
+        {
+            _selectedRendererIndex = _rendererList.selectedIndex;
             RefreshMaterialSlots();
         }
 
